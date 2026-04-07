@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080f14">
+<title>WA Panel | Bol$illo Lleno</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+:root{
+  --bg:#080f14;
+  --bg2:#0d1820;
+  --surface:#0f2030;
+  --surface2:#162840;
+  --surface3:#1c3050;
+  --border:rgba(37,211,102,.14);
+  --border2:rgba(37,211,102,.07);
+  --wa:#25d366;
+  --wa2:#34eb7a;
+  --wa3:#b7f5c8;
+  --gold:#f59e0b;
+  --gold2:#fbbf24;
+  --red:#ef4444;
+  --red2:#fca5a5;
+  --orange:#f97316;
+  --blue:#3b82f6;
+  --text:#e2f0e8;
+  --text2:rgba(226,240,232,.6);
+  --text3:rgba(226,240,232,.3);
+  --grad-wa:linear-gradient(135deg,#34eb7a,#25d366,#128c7e);
+  --grad-gold:linear-gradient(135deg,#fde68a,#fbbf24,#f59e0b);
+  --grad-dark:linear-gradient(180deg,#162840 0%,#0f2030 100%);
+  --nav-h:68px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --r:12px;--rl:18px;--rxl:24px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(37,211,102,.2);border-radius:10px}
+
+/* ── LOGIN ── */
+#loginScreen{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+  transition:opacity .4s,transform .4s;
+}
+#loginScreen.hidden{opacity:0;pointer-events:none;transform:scale(.96)}
+.lg-glow{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:320px;height:320px;background:radial-gradient(circle,rgba(37,211,102,.1) 0%,transparent 70%);pointer-events:none}
+.lg-icon{width:80px;height:80px;border-radius:22px;background:var(--grad-wa);display:flex;align-items:center;justify-content:center;font-size:2.2em;margin:0 auto 18px;box-shadow:0 20px 50px rgba(37,211,102,.3)}
+.lg-title{font-size:1.5em;font-weight:900;background:var(--grad-wa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;letter-spacing:-.02em}
+.lg-sub{font-size:.75em;color:var(--text3);text-align:center;margin-top:4px;font-weight:600;letter-spacing:.5px}
+.lg-card{width:100%;max-width:370px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl);padding:28px 22px;margin-top:28px;box-shadow:0 40px 80px rgba(0,0,0,.6)}
+.lf{margin-bottom:15px}
+.lf label{display:block;font-size:.7em;font-weight:800;color:var(--wa);margin-bottom:7px;letter-spacing:.8px;text-transform:uppercase}
+.lf input{width:100%;padding:14px 15px;background:rgba(0,0,0,.35);border:1.5px solid rgba(37,211,102,.2);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:.95em;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.lf input:focus{border-color:var(--wa);box-shadow:0 0 0 3px rgba(37,211,102,.1)}
+.lf input::placeholder{color:var(--text3)}
+.btn-lg{width:100%;padding:15px;background:var(--grad-wa);border:none;border-radius:var(--rl);color:#022c16;font-weight:900;font-size:.95em;cursor:pointer;font-family:inherit;letter-spacing:.3px;box-shadow:0 8px 24px rgba(37,211,102,.35);transition:transform .15s,box-shadow .15s;margin-top:4px}
+.btn-lg:active{transform:scale(.97)}
+#lgErr{color:var(--red2);font-size:.8em;text-align:center;margin-top:12px;display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);padding:10px;border-radius:var(--r)}
+
+/* ── APP SHELL ── */
+#app{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);display:none}
+
+/* ── TOPBAR ── */
+#topbar{
+  flex-shrink:0;height:calc(58px + var(--safe-top));padding-top:var(--safe-top);
+  background:var(--surface);border-bottom:1px solid var(--border2);
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding-left:18px;padding-right:14px;padding-bottom:12px;z-index:100;position:relative;
+}
+.tb-left{display:flex;align-items:center;gap:11px}
+.tb-dot{width:9px;height:9px;border-radius:50%;background:#555;flex-shrink:0;transition:background .4s,box-shadow .4s}
+.tb-dot.on{background:var(--wa);box-shadow:0 0 8px rgba(37,211,102,.7)}
+.tb-dot.warn{background:var(--orange);box-shadow:0 0 8px rgba(249,115,22,.5)}
+.tb-name{font-size:1em;font-weight:800;color:var(--text);letter-spacing:-.01em}
+.tb-status{font-size:.65em;color:var(--text3);font-weight:600;margin-top:1px}
+.tb-right{display:flex;gap:7px;align-items:center}
+.tb-btn{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.05em;cursor:pointer;transition:background .15s}
+.tb-btn:active{background:rgba(37,211,102,.15);border-color:rgba(37,211,102,.4)}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow:hidden;position:relative}
+.sec{display:none;position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:14px 14px calc(var(--nav-h) + var(--safe-bottom) + 14px);-webkit-overflow-scrolling:touch;animation:fadeUp .22s ease}
+.sec.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── BOTTOM NAV ── */
+#nav{
+  flex-shrink:0;position:fixed;bottom:0;left:0;right:0;
+  height:calc(var(--nav-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);
+  background:var(--surface);border-top:1px solid var(--border2);
+  display:flex;align-items:flex-start;padding-top:8px;z-index:100;
+}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px 0;cursor:pointer;transition:transform .15s;position:relative}
+.nb:active{transform:scale(.88)}
+.nb-ico{width:42px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.25em;transition:background .2s,transform .2s}
+.nb.active .nb-ico{background:rgba(37,211,102,.15);transform:scale(1.1)}
+.nb-lbl{font-size:.6em;font-weight:700;color:var(--text3);letter-spacing:.3px;transition:color .2s}
+.nb.active .nb-lbl{color:var(--wa2)}
+.nb-badge{position:absolute;top:2px;right:calc(50% - 26px);min-width:16px;height:16px;background:var(--red);border-radius:8px;font-size:.58em;font-weight:800;color:#fff;display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--surface)}
+.nb-badge.show{display:flex}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+.card-hdr{font-size:.68em;font-weight:800;color:var(--wa);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.card-hdr span{flex:1}
+.card-hdr-act{font-size:.8em;color:var(--text3);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0}
+.card-hdr-act:hover{color:var(--wa2)}
+
+/* ── STATS GRID ── */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);padding:15px;text-align:center;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:-18px;right:-18px;width:60px;height:60px;border-radius:50%;background:var(--sc-acc,rgba(37,211,102,.06))}
+.sc.wa{--sc-acc:rgba(37,211,102,.08)}.sc.gold{--sc-acc:rgba(245,158,11,.08)}.sc.red{--sc-acc:rgba(239,68,68,.08)}.sc.blue{--sc-acc:rgba(59,130,246,.08)}
+.sv{font-size:1.8em;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1;margin-bottom:4px}
+.sv.wa{color:var(--wa2)}.sv.gold{background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.sv.red{color:var(--red2)}.sv.blue{color:#93c5fd}
+.sl{font-size:.64em;color:var(--text3);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+
+/* ── BUTTONS ── */
+.btn{padding:11px 18px;border:none;border-radius:var(--r);font-family:inherit;font-weight:800;font-size:.85em;cursor:pointer;transition:transform .1s,box-shadow .1s;display:inline-flex;align-items:center;justify-content:center;gap:6px;letter-spacing:.2px}
+.btn:active{transform:scale(.96)}
+.btn-wa{background:var(--grad-wa);color:#022c16;box-shadow:0 5px 18px rgba(37,211,102,.3)}
+.btn-gold{background:var(--grad-gold);color:#022c16;box-shadow:0 5px 18px rgba(245,158,11,.3)}
+.btn-red{background:linear-gradient(135deg,#f87171,#ef4444);color:#fff}
+.btn-ghost{background:rgba(255,255,255,.06);border:1.5px solid var(--border);color:var(--text2)}
+.btn-ghost:active{background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.4);color:var(--wa2)}
+.btn-full{width:100%}
+.btn-sm{padding:8px 13px;font-size:.78em;border-radius:9px}
+.btn-ico{width:36px;height:36px;padding:0;border-radius:10px;font-size:.95em}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.66em;font-weight:800;white-space:nowrap}
+.bg-wa{background:rgba(37,211,102,.14);color:var(--wa2);border:1px solid rgba(37,211,102,.25)}
+.bg-gold{background:rgba(245,158,11,.14);color:var(--gold2);border:1px solid rgba(245,158,11,.25)}
+.bg-red{background:rgba(239,68,68,.14);color:var(--red2);border:1px solid rgba(239,68,68,.25)}
+.bg-blue{background:rgba(59,130,246,.14);color:#93c5fd;border:1px solid rgba(59,130,246,.25)}
+.bg-gray{background:rgba(255,255,255,.07);color:var(--text3);border:1px solid var(--border)}
+
+/* ── FORMS ── */
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:.7em;font-weight:700;color:var(--text2);margin-bottom:6px;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:12px 13px;background:rgba(0,0,0,.3);border:1.5px solid rgba(37,211,102,.15);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:.9em;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--wa);box-shadow:0 0 0 3px rgba(37,211,102,.08)}
+.fg input::placeholder,.fg textarea::placeholder{color:var(--text3)}
+.fg select option{background:#0f2030}
+.fg textarea{resize:vertical;line-height:1.6;min-height:90px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── TOGGLES ── */
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,.1);border:1.5px solid var(--border);position:relative;cursor:pointer;transition:background .2s,border-color .2s;flex-shrink:0}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .2s,background .2s;box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.toggle.on{background:var(--wa);border-color:var(--wa)}
+.toggle.on::after{transform:translateX(20px);background:#fff}
+.toggle-lbl{font-size:.85em;font-weight:700;color:var(--text2)}
+
+/* ── LIST ROWS ── */
+.row{display:flex;align-items:center;padding:13px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);margin-bottom:8px;gap:11px;cursor:pointer;transition:border-color .18s,background .18s;position:relative;overflow:hidden}
+.row:active{background:rgba(37,211,102,.05);border-color:rgba(37,211,102,.3)}
+.row.unread{border-color:rgba(37,211,102,.25);background:rgba(37,211,102,.04)}
+.r-ava{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.1em;font-weight:800;flex-shrink:0;background:rgba(37,211,102,.12);color:var(--wa2)}
+.r-body{flex:1;min-width:0}
+.r-name{font-weight:700;font-size:.88em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.r-sub{font-size:.72em;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.r-time{font-size:.65em;color:var(--text3);font-weight:600}
+
+/* ── CHAT VIEW ── */
+#chatView{display:none;position:absolute;inset:0;background:var(--bg);flex-direction:column;z-index:200}
+#chatView.open{display:flex}
+.chat-topbar{flex-shrink:0;height:calc(58px + var(--safe-top));padding-top:var(--safe-top);background:var(--surface);border-bottom:1px solid var(--border2);display:flex;align-items:flex-end;padding:var(--safe-top) 14px 12px;gap:11px}
+.chat-back{font-size:1.2em;cursor:pointer;padding:4px;color:var(--wa)}
+.chat-ava{width:36px;height:36px;border-radius:11px;background:rgba(37,211,102,.15);display:flex;align-items:center;justify-content:center;font-size:.95em;font-weight:800;color:var(--wa2);flex-shrink:0}
+.chat-info{flex:1;min-width:0}
+.chat-name{font-weight:800;font-size:.9em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-last{font-size:.68em;color:var(--text3);font-weight:600}
+.chat-actions{display:flex;gap:6px}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;background:var(--bg)}
+.msg{max-width:82%;padding:10px 13px;border-radius:14px;font-size:.86em;line-height:1.55;position:relative}
+.msg.in{background:var(--surface2);border-radius:14px 14px 14px 4px;align-self:flex-start;color:var(--text)}
+.msg.out{background:linear-gradient(135deg,#128c7e,#075e54);border-radius:14px 14px 4px 14px;align-self:flex-end;color:#e8f5f0}
+.msg.bot{background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.2);border-radius:14px 14px 14px 4px;align-self:flex-start}
+.msg-time{font-size:.6em;opacity:.55;margin-top:4px;text-align:right}
+.chat-input-wrap{flex-shrink:0;padding:10px 12px calc(10px + var(--safe-bottom));background:var(--surface);border-top:1px solid var(--border2);display:flex;gap:8px;align-items:flex-end}
+.chat-inp{flex:1;background:rgba(0,0,0,.35);border:1.5px solid rgba(37,211,102,.15);border-radius:22px;padding:11px 15px;color:var(--text);font-family:inherit;font-size:.9em;outline:none;max-height:100px;overflow-y:auto;resize:none;line-height:1.5;transition:border-color .2s}
+.chat-inp:focus{border-color:var(--wa)}
+.chat-send{width:42px;height:42px;border-radius:50%;background:var(--grad-wa);border:none;color:#022c16;font-size:1.1em;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(37,211,102,.35);transition:transform .15s}
+.chat-send:active{transform:scale(.9)}
+.quick-btns{display:flex;gap:6px;padding:8px 12px 0;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.quick-btns::-webkit-scrollbar{display:none}
+.qb{padding:6px 13px;border-radius:20px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);color:var(--wa2);font-size:.72em;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;transition:background .15s}
+.qb:active{background:rgba(37,211,102,.25)}
+
+/* ── CRM ROWS ── */
+.crm-row{display:flex;align-items:center;padding:14px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);margin-bottom:8px;gap:12px}
+.crm-ava{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1em;font-weight:900;flex-shrink:0}
+.crm-info{flex:1;min-width:0}
+.crm-name{font-weight:700;font-size:.88em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crm-meta{font-size:.7em;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crm-acts{display:flex;gap:5px;flex-shrink:0}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 15px;border-radius:20px;background:rgba(255,255,255,.05);border:1.5px solid var(--border2);color:var(--text3);font-size:.76em;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;font-family:inherit}
+.tab.active{background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.35);color:var(--wa2)}
+
+/* ── PROGRESS ── */
+.prog-wrap{background:var(--surface2);border-radius:99px;height:7px;overflow:hidden;margin:10px 0}
+.prog-bar{height:100%;background:var(--grad-wa);border-radius:99px;transition:width .3s}
+
+/* ── URGENTES ── */
+.urg-row{display:flex;align-items:center;gap:11px;padding:12px;background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.2);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:background .15s}
+.urg-row:active{background:rgba(249,115,22,.12)}
+.urg-ava{width:38px;height:38px;border-radius:10px;background:rgba(249,115,22,.15);display:flex;align-items:center;justify-content:center;font-size:.95em;font-weight:800;flex-shrink:0;color:var(--orange)}
+.urg-info{flex:1;min-width:0}
+.urg-name{font-weight:700;font-size:.85em}
+.urg-meta{font-size:.7em;color:var(--text3);margin-top:2px}
+
+/* ── BOT CARD ── */
+.bot-status-card{background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(18,140,126,.05));border:1px solid rgba(37,211,102,.2);border-radius:var(--rl);padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+.bot-icon{width:52px;height:52px;border-radius:15px;background:var(--grad-wa);display:flex;align-items:center;justify-content:center;font-size:1.4em;flex-shrink:0;box-shadow:0 8px 20px rgba(37,211,102,.3)}
+.bot-text{flex:1}
+.bot-title{font-weight:900;font-size:.95em;margin-bottom:3px}
+.bot-sub{font-size:.72em;color:var(--text3);line-height:1.5}
+
+/* ── PERS BTNS ── */
+.pers-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.pers-btn{padding:12px;background:rgba(255,255,255,.04);border:1.5px solid var(--border2);border-radius:var(--r);cursor:pointer;font-family:inherit;transition:all .15s;text-align:center}
+.pers-btn .pi{font-size:1.5em;margin-bottom:5px}
+.pers-btn .pn{font-size:.75em;font-weight:800;color:var(--text2)}
+.pers-btn .pd{font-size:.65em;color:var(--text3);margin-top:2px;line-height:1.4}
+.pers-btn.active{background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.4)}
+.pers-btn.active .pn{color:var(--wa2)}
+
+/* ── KB ── */
+.kb-item{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px}
+.kb-q{font-size:.82em;font-weight:800;color:var(--text);margin-bottom:4px}
+.kb-a{font-size:.76em;color:var(--text3);line-height:1.5;margin-bottom:8px}
+.kb-acts{display:flex;gap:6px;justify-content:flex-end}
+
+/* ── LOG ── */
+.log-wrap{max-height:220px;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:var(--r);padding:10px;font-family:'JetBrains Mono',monospace;font-size:.72em;color:var(--text3)}
+.log-ok{color:var(--wa2);margin-bottom:4px}
+.log-err{color:var(--red2);margin-bottom:4px}
+.log-info{color:var(--text3);margin-bottom:4px}
+
+/* ── SECTION EMPTY ── */
+.empty{text-align:center;padding:36px 20px;color:var(--text3)}
+.empty .ei{font-size:2.5em;margin-bottom:10px}
+.empty .et{font-size:.85em;font-weight:600}
+
+/* ── SNACK ── */
+#snack{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 12px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 20px;border-radius:30px;font-size:.82em;font-weight:700;white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#snack.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#snack.err{border-color:rgba(239,68,68,.4);color:var(--red2)}
+#snack.wa{border-color:rgba(37,211,102,.4);color:var(--wa2)}
+
+/* ── LOADING ── */
+#loading{position:fixed;inset:0;z-index:8000;background:rgba(8,15,20,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#loading.active{display:flex}
+.spin{width:36px;height:36px;border:3px solid rgba(37,211,102,.2);border-top-color:var(--wa);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── MODAL ── */
+.modal-ov{position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;-webkit-backdrop-filter:blur(4px)}
+.modal-ov.active{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl) var(--rxl) 0 0;width:100%;max-width:520px;padding:0;max-height:90vh;overflow-y:auto;transform:translateY(30px);transition:transform .3s}
+.modal-ov.active .modal{transform:none}
+.modal-hdl{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:4px;margin:10px auto 0}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px}
+.modal-title{font-size:1em;font-weight:900}
+.modal-x{background:none;border:none;color:var(--text3);font-size:1.2em;cursor:pointer;padding:4px;font-family:inherit}
+.modal-body{padding:4px 18px 18px}
+.modal-footer{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--border2)}
+.modal-footer .btn{flex:1}
+
+/* ── ADMIN LINK ── */
+.admin-link{display:flex;align-items:center;gap:10px;padding:13px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:var(--r);margin-bottom:10px;cursor:pointer;text-decoration:none;color:inherit}
+.admin-link:active{background:rgba(245,158,11,.12)}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-size:1em;font-weight:900;margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-top:2px}
+.sec-title span{font-size:.68em;color:var(--text3);font-weight:600}
+
+/* ── ACCIONES RAPIDAS ── */
+.aq-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.aq-btn{padding:15px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);cursor:pointer;font-family:inherit;text-align:center;transition:all .15s}
+.aq-btn:active{transform:scale(.96)}
+.aq-ico{font-size:1.6em;margin-bottom:6px}
+.aq-label{font-size:.76em;font-weight:800;color:var(--text2)}
+.aq-sub{font-size:.65em;color:var(--text3);margin-top:2px}
+.aq-btn.wa-act{border-color:rgba(37,211,102,.3);background:rgba(37,211,102,.06)}
+.aq-btn.gold-act{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.06)}
+.aq-btn.red-act{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.06)}
+.aq-btn.blue-act{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.06)}
+
+/* ── DIVIDER ── */
+.div{height:1px;background:var(--border2);margin:14px 0}
+
+/* ── SORTEO SEL ── */
+.sorteo-pill{display:flex;align-items:center;gap:8px;padding:10px 13px;background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.18);border-radius:var(--r);margin-bottom:10px}
+.sorteo-pill select{flex:1;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:.85em;font-weight:700;outline:none;cursor:pointer}
+.sorteo-pill select option{background:#0f2030}
+
+/* ── SEGMENTO BTNS ── */
+.seg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.seg-btn{padding:11px 10px;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;transition:all .15s;position:relative}
+.seg-btn.active{border-color:var(--wa);background:rgba(37,211,102,.08)}
+.seg-btn .sb-ico{font-size:1.2em;margin-bottom:4px}
+.seg-btn .sb-lbl{font-size:.76em;font-weight:800;color:var(--text2);display:block}
+.seg-btn .sb-cnt{font-size:.7em;color:var(--text3);font-weight:600}
+.seg-btn.active .sb-lbl{color:var(--wa2)}
+
+/* ── MSG EDITOR ── */
+.msg-edit{width:100%;min-height:110px;background:rgba(0,0,0,.3);border:1.5px solid rgba(37,211,102,.15);border-radius:var(--r);padding:13px;color:var(--text);font-family:inherit;font-size:.88em;outline:none;resize:vertical;line-height:1.6;transition:border-color .2s}
+.msg-edit:focus{border-color:var(--wa)}
+.msg-preview{background:linear-gradient(135deg,#128c7e22,#075e5422);border:1px solid rgba(37,211,102,.2);border-radius:var(--r);padding:13px;font-size:.84em;line-height:1.7;color:var(--text2);white-space:pre-wrap;min-height:60px}
+
+/* ── TPLS ── */
+.tpl-grid{display:grid;gap:7px;margin-bottom:12px}
+.tpl-btn{padding:11px 13px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s}
+.tpl-btn:active{background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.3)}
+.tpl-ico{font-size:1.2em;flex-shrink:0}
+.tpl-txt{flex:1}
+.tpl-name{font-size:.8em;font-weight:800;color:var(--text)}
+.tpl-prev{font-size:.7em;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── CONFIG ── */
+.cfg-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border2)}
+.cfg-section:last-child{border-bottom:none}
+.cfg-title{font-size:.75em;font-weight:800;color:var(--wa);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px}
+.cfg-result{font-size:.78em;margin-top:8px;padding:8px 11px;border-radius:8px;background:rgba(0,0,0,.3);min-height:34px}
+
+/* ── FUENTE ── */
+.fn-row{display:flex;align-items:center;padding:11px 13px;border-radius:var(--r);background:var(--surface2);border:1px solid var(--border2);margin-bottom:7px;gap:10px}
+.fn-bar-wrap{flex:1;background:rgba(0,0,0,.3);border-radius:99px;height:6px;overflow:hidden}
+.fn-bar{height:100%;background:var(--grad-wa);border-radius:99px}
+.fn-lbl{font-size:.78em;font-weight:700;width:80px;flex-shrink:0}
+.fn-cnt{font-size:.78em;font-weight:800;font-family:'JetBrains Mono',monospace;width:30px;text-align:right;flex-shrink:0;color:var(--wa2)}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="loginScreen">
+  <div class="lg-glow"></div>
+  <div style="text-align:center;margin-bottom:8px">
+    <div class="lg-icon">💬</div>
+    <div class="lg-title">WA Panel</div>
+    <div class="lg-sub">BOL$ILLO LLENO · WHATSAPP AUTOMATION</div>
+  </div>
+  <div class="lg-card">
+    <div class="lf"><label>Correo</label><input type="email" id="lgEmail" placeholder="admin@bolsillo.com" autocomplete="off"></div>
+    <div class="lf"><label>Contraseña</label><input type="password" id="lgPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn-lg" onclick="doLogin()">🔐 Entrar al Panel</button>
+    <div id="lgErr"></div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="tb-left">
+      <div class="tb-dot" id="apiDot"></div>
+      <div>
+        <div class="tb-name">WA Panel</div>
+        <div class="tb-status" id="tbStatus">Verificando API…</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-btn" onclick="goSec('bot')" title="Bot">🤖</div>
+      <div class="tb-btn" onclick="goSec('cfg')" title="Configurar">⚙️</div>
+      <div class="tb-btn" onclick="confirmLogout()" title="Salir">🚪</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- ══════════ INICIO ══════════ -->
+    <div class="sec active" id="s-inicio">
+      <div class="sec-title">🏠 Dashboard <span id="dtFecha"></span></div>
+
+      <!-- Stats -->
+      <div class="sg">
+        <div class="sc wa"><div class="sv wa" id="stMsgs">0</div><div class="sl">Chats activos</div></div>
+        <div class="sc gold"><div class="sv gold" id="stPend">0</div><div class="sl">Sin pagar</div></div>
+        <div class="sc red"><div class="sv red" id="stUrg">0</div><div class="sl">Urgentes 🔥</div></div>
+        <div class="sc blue"><div class="sv blue" id="stClts">0</div><div class="sl">Clientes DB</div></div>
+      </div>
+
+      <!-- Sorteo activo -->
+      <div class="card" id="sorteoActivoCard" style="display:none">
+        <div class="card-hdr"><span>🎰 Sorteo activo</span><div class="badge bg-wa" id="sorteoActivoBadge">Activo</div></div>
+        <div id="sorteoActivoInfo" style="font-size:.84em;line-height:1.8;color:var(--text2)"></div>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div class="card-hdr" style="margin-bottom:10px">⚡ Acciones rápidas</div>
+      <div class="aq-grid">
+        <div class="aq-btn wa-act" onclick="goSec('envios');setSegmento('pendientes')">
+          <div class="aq-ico">⏰</div><div class="aq-label">Recordatorios</div><div class="aq-sub">Avisar pagos pendientes</div>
+        </div>
+        <div class="aq-btn gold-act" onclick="goSec('envios')">
+          <div class="aq-ico">📢</div><div class="aq-label">Nueva campaña</div><div class="aq-sub">Envío masivo</div>
+        </div>
+        <div class="aq-btn red-act" onclick="goSec('envios');setSegmento('frecuentes')">
+          <div class="aq-ico">⭐</div><div class="aq-label">Msg VIP</div><div class="aq-sub">Clientes frecuentes</div>
+        </div>
+        <div class="aq-btn blue-act" onclick="goSec('crm')">
+          <div class="aq-ico">👥</div><div class="aq-label">Ver CRM</div><div class="aq-sub">Segmentar clientes</div>
+        </div>
+      </div>
+
+      <!-- Urgentes (pending sin pagar) -->
+      <div class="card">
+        <div class="card-hdr"><span>🔥 Pendientes de pago</span><div class="card-hdr-act" onclick="goSec('envios');setSegmento('pendientes')">Ver todos ›</div></div>
+        <div id="urgList"></div>
+      </div>
+
+      <!-- Actividad reciente -->
+      <div class="card">
+        <div class="card-hdr"><span>💬 Últimos mensajes</span><div class="card-hdr-act" onclick="goSec('bandeja')">Ver bandeja ›</div></div>
+        <div id="recentMsgs"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ BANDEJA ══════════ -->
+    <div class="sec" id="s-bandeja">
+      <div class="sec-title">💬 Bandeja <span id="unreadCount"></span></div>
+      <div id="chatList"></div>
+      <!-- CHAT VIEW (overlay) -->
+      <div id="chatView">
+        <div class="chat-topbar">
+          <div class="chat-back" onclick="cerrarChat()">‹</div>
+          <div class="chat-ava" id="cvAva">?</div>
+          <div class="chat-info">
+            <div class="chat-name" id="cvName">—</div>
+            <div class="chat-last" id="cvLast"></div>
+          </div>
+          <div class="chat-actions">
+            <button class="tb-btn" onclick="chatAbrirConfirm()" title="Confirmar pago">💰</button>
+            <button class="tb-btn" onclick="chatInfoCliente()" title="Info cliente">👤</button>
+          </div>
+        </div>
+        <div class="quick-btns" id="quickBtns">
+          <button class="qb" onclick="qReply('datos_pago')">💳 Datos pago</button>
+          <button class="qb" onclick="qReply('numeros')">🎟️ Ver números</button>
+          <button class="qb" onclick="qReply('como_funciona')">❓ Cómo funciona</button>
+          <button class="qb" onclick="qReply('gracias')">🙏 Gracias</button>
+          <button class="qb" onclick="chatSugerirIA()">🤖 IA suggest</button>
+        </div>
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="chat-input-wrap">
+          <textarea class="chat-inp" id="chatInp" placeholder="Escribe un mensaje…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMsgChat()}"></textarea>
+          <button class="chat-send" onclick="enviarMsgChat()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ CRM ══════════ -->
+    <div class="sec" id="s-crm">
+      <div class="sec-title">👥 CRM</div>
+      <!-- Embudo -->
+      <div class="card">
+        <div class="card-hdr">📊 Embudo de ventas</div>
+        <div id="funnelBars"></div>
+      </div>
+      <!-- Tabs CRM -->
+      <div class="tabs" id="crmTabs">
+        <button class="tab active" onclick="crmTab('calientes',this)">🔥 Calientes</button>
+        <button class="tab" onclick="crmTab('pendientes',this)">⏳ Pendientes</button>
+        <button class="tab" onclick="crmTab('nuevos',this)">🆕 Nuevos</button>
+        <button class="tab" onclick="crmTab('frecuentes',this)">⭐ Frecuentes</button>
+        <button class="tab" onclick="crmTab('todos',this)">👥 Todos</button>
+      </div>
+      <div id="crmList"></div>
+    </div>
+
+    <!-- ══════════ ENVÍOS ══════════ -->
+    <div class="sec" id="s-envios">
+      <div class="sec-title">📢 Envíos & Campañas</div>
+
+      <!-- Sorteo selector -->
+      <div class="sorteo-pill">
+        <span>🎰</span>
+        <select id="envSorteoSel" onchange="calcDestinatarios()">
+          <option value="">— Todos los sorteos —</option>
+        </select>
+      </div>
+
+      <!-- Segmentos -->
+      <div class="card-hdr" style="margin-bottom:8px">👥 Segmento objetivo</div>
+      <div class="seg-grid">
+        <div class="seg-btn active" id="seg-todos" onclick="setSegmento('todos')">
+          <div class="sb-ico">👥</div><span class="sb-lbl">Todos</span><span class="sb-cnt" id="scnt-todos">0</span>
+        </div>
+        <div class="seg-btn" id="seg-pendientes" onclick="setSegmento('pendientes')">
+          <div class="sb-ico">⏰</div><span class="sb-lbl">Sin pagar</span><span class="sb-cnt" id="scnt-pendientes">0</span>
+        </div>
+        <div class="seg-btn" id="seg-frecuentes" onclick="setSegmento('frecuentes')">
+          <div class="sb-ico">⭐</div><span class="sb-lbl">Frecuentes</span><span class="sb-cnt" id="scnt-frecuentes">0</span>
+        </div>
+        <div class="seg-btn" id="seg-nuevos" onclick="setSegmento('nuevos')">
+          <div class="sb-ico">🆕</div><span class="sb-lbl">Nuevos</span><span class="sb-cnt" id="scnt-nuevos">0</span>
+        </div>
+      </div>
+
+      <!-- Templates -->
+      <div class="card-hdr" style="margin-bottom:8px">💬 Plantillas rápidas</div>
+      <div class="tpl-grid">
+        <div class="tpl-btn" onclick="loadTpl('recordatorio')"><div class="tpl-ico">⏰</div><div class="tpl-txt"><div class="tpl-name">Recordatorio de pago</div><div class="tpl-prev">Hola! Tu número está reservado...</div></div></div>
+        <div class="tpl-btn" onclick="loadTpl('urgencia')"><div class="tpl-ico">🔥</div><div class="tpl-txt"><div class="tpl-name">Urgencia / cierre</div><div class="tpl-prev">¡El sorteo cierra pronto!</div></div></div>
+        <div class="tpl-btn" onclick="loadTpl('bienvenida')"><div class="tpl-ico">👋</div><div class="tpl-txt"><div class="tpl-name">Bienvenida</div><div class="tpl-prev">¡Bienvenido a Bol$illo Lleno!</div></div></div>
+        <div class="tpl-btn" onclick="loadTpl('vip')"><div class="tpl-ico">⭐</div><div class="tpl-txt"><div class="tpl-name">Mensaje VIP</div><div class="tpl-prev">Exclusivo para clientes frecuentes</div></div></div>
+        <div class="tpl-btn" onclick="loadTpl('reactivar')"><div class="tpl-ico">💤</div><div class="tpl-txt"><div class="tpl-name">Reactivar inactivos</div><div class="tpl-prev">Hace tiempo no te vemos...</div></div></div>
+        <div class="tpl-btn" onclick="loadTpl('ganador')"><div class="tpl-ico">🏆</div><div class="tpl-txt"><div class="tpl-name">Anuncio ganador</div><div class="tpl-prev">¡Tenemos ganador esta noche!</div></div></div>
+      </div>
+
+      <!-- Editor -->
+      <div class="card-hdr" style="margin-bottom:8px">✏️ Editor de mensaje</div>
+      <textarea class="msg-edit" id="msgEditor" placeholder="Escribe tu mensaje aquí...&#10;Usa *negrita* y _cursiva_ con formato WhatsApp." oninput="updatePreview()"></textarea>
+      <div style="display:flex;gap:7px;margin:8px 0">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarConIA()">🤖 Generar con IA</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="limpiarEditor()">🗑️ Limpiar</button>
+      </div>
+
+      <!-- Preview -->
+      <div class="card-hdr" style="margin-bottom:6px">👁️ Vista previa</div>
+      <div class="msg-preview" id="msgPreview"><span style="color:var(--text3);font-size:.9em">Tu mensaje aparecerá aquí…</span></div>
+
+      <div class="div"></div>
+
+      <!-- Enviar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:.84em;color:var(--text2);font-weight:700">Destinatarios: <span id="destCount" style="color:var(--wa2);font-weight:900">0</span></div>
+        <div class="badge bg-wa" id="destBadge">todos</div>
+      </div>
+      <button class="btn btn-wa btn-full" id="btnEnviar" onclick="enviarCampana()">📤 Enviar campaña</button>
+
+      <!-- Progreso -->
+      <div id="progSection" style="display:none;margin-top:12px">
+        <div class="prog-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:.76em;color:var(--text3);margin-bottom:8px">
+          <span id="progTxt">Enviando…</span><span id="progPct">0%</span>
+        </div>
+        <div class="log-wrap" id="envLog"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ BOT ══════════ -->
+    <div class="sec" id="s-bot">
+      <div class="sec-title">🤖 Bot IA</div>
+
+      <!-- Estado bot -->
+      <div class="bot-status-card">
+        <div class="bot-icon">🤖</div>
+        <div class="bot-text">
+          <div class="bot-title" id="botTitleText">Bot desactivado</div>
+          <div class="bot-sub" id="botSubText">Actívalo para responder automáticamente a los clientes 24/7</div>
+        </div>
+        <div class="toggle" id="botToggle" onclick="toggleBot()"></div>
+      </div>
+
+      <!-- Personalidad -->
+      <div class="card-hdr" style="margin-bottom:8px">🎭 Personalidad del bot</div>
+      <div class="pers-grid">
+        <div class="pers-btn active" id="bp-amigo" onclick="setPersonalidad('amigo',this)"><div class="pi">😊</div><div class="pn">Amigo</div><div class="pd">Cálido y cercano. Genera confianza</div></div>
+        <div class="pers-btn" id="bp-emocion" onclick="setPersonalidad('emocion',this)"><div class="pi">🔥</div><div class="pn">Emoción</div><div class="pd">Entusiasta. Activa dopamina</div></div>
+        <div class="pers-btn" id="bp-urgente" onclick="setPersonalidad('urgente',this)"><div class="pi">⚡</div><div class="pn">Urgente</div><div class="pd">FOMO y escasez constante</div></div>
+        <div class="pers-btn" id="bp-pro" onclick="setPersonalidad('pro',this)"><div class="pi">💼</div><div class="pn">Profesional</div><div class="pd">Preciso y ejecutivo</div></div>
+      </div>
+      <div style="font-size:.76em;color:var(--text3);background:rgba(0,0,0,.3);border-radius:var(--r);padding:10px 12px;margin-bottom:14px;line-height:1.5" id="persDesc">El bot habla como un amigo de confianza, cercano y cálido. Usa emojis con moderación. Genera confianza antes de vender.</div>
+
+      <!-- Modo siesta (horario) -->
+      <div class="card-hdr" style="margin-bottom:8px">😴 Mensaje de ausencia</div>
+      <div class="card">
+        <div class="fg"><label>Mensaje cuando el bot está OFF</label>
+          <textarea id="siestaMsg" rows="3" placeholder="Ej: Hola! En este momento estamos fuera de línea. Te respondemos pronto 🙏"></textarea>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-full" onclick="guardarSiesta()">💾 Guardar mensaje</button>
+      </div>
+
+      <!-- Base de conocimiento -->
+      <div class="card-hdr" style="margin-bottom:8px">📚 Base de conocimiento</div>
+      <div class="fg"><label>Información del negocio (contexto del bot)</label>
+        <textarea id="kbBizInfo" rows="3" placeholder="Ej: Bol$illo Lleno x5 es un sorteo colombiano donde ganas con 5 maneras. Nequi: 3502429433..."></textarea>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:14px" onclick="guardarBizInfo()">💾 Guardar contexto</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-hdr" style="margin-bottom:0">❓ Preguntas frecuentes</div>
+        <button class="btn btn-wa btn-sm" onclick="openKBModal()">+ Nueva</button>
+      </div>
+      <div id="kbList"></div>
+    </div>
+
+    <!-- ══════════ CONFIG ══════════ -->
+    <div class="sec" id="s-cfg">
+      <div class="sec-title">⚙️ Configuración</div>
+
+      <!-- Link al admin -->
+      <a class="admin-link" href="index.html">
+        <span style="font-size:1.3em">🏠</span>
+        <div style="flex:1"><div style="font-weight:800;font-size:.88em">Panel Admin</div><div style="font-size:.72em;color:var(--text3)">Volver al panel de sorteos y números</div></div>
+        <span style="color:var(--text3)">›</span>
+      </a>
+
+      <!-- Meta API -->
+      <div class="card">
+        <div class="cfg-section">
+          <div class="cfg-title">🔑 Meta WhatsApp Cloud API</div>
+          <div class="fg"><label>Access Token</label><input type="password" id="cfgToken" placeholder="EAAxxxxxxxx..."></div>
+          <div class="fg"><label>Phone Number ID</label><input type="text" id="cfgPhoneId" placeholder="1234567890123456" inputmode="numeric"></div>
+          <div class="fg"><label>Tu número de WhatsApp (con código país)</label><input type="tel" id="cfgNumero" placeholder="573001234567" inputmode="numeric"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-wa btn-sm" style="flex:1" onclick="guardarCfg()">💾 Guardar</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="testApi()">🧪 Probar</button>
+          </div>
+          <div class="cfg-result" id="cfgTestResult" style="display:none"></div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-title">🌐 Estado de conexión</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div class="tb-dot" id="cfgDot" style="width:12px;height:12px"></div>
+            <div style="font-size:.84em;color:var(--text2)" id="cfgStatusTxt">No configurado</div>
+          </div>
+          <div style="font-size:.76em;color:var(--text3);line-height:1.6;background:rgba(0,0,0,.3);padding:10px;border-radius:var(--r)">
+            📌 <strong style="color:var(--text)">Cómo obtener el token:</strong><br>
+            1. Ve a <a href="https://developers.facebook.com" target="_blank" style="color:var(--wa)">developers.facebook.com</a><br>
+            2. Mi App → WhatsApp → Configuración de la API<br>
+            3. Copia el <em>Token de acceso temporal</em> o genera uno permanente<br>
+            4. Copia el <em>ID del número de teléfono</em>
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-title">📊 Límites Anti-ban</div>
+          <div class="fg"><label>Máx mensajes por hora</label>
+            <select id="cfgMaxHora">
+              <option value="10">10 mensajes/hora (seguro)</option>
+              <option value="15" selected>15 mensajes/hora (recomendado)</option>
+              <option value="20">20 mensajes/hora (moderado)</option>
+              <option value="30">30 mensajes/hora (riesgo)</option>
+            </select>
+          </div>
+          <div class="fg"><label>Intervalo entre mensajes</label>
+            <select id="cfgIntervalo">
+              <option value="3000">3 segundos</option>
+              <option value="5000" selected>5 segundos (recomendado)</option>
+              <option value="8000">8 segundos</option>
+              <option value="12000">12 segundos (muy seguro)</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm btn-full" onclick="guardarLimites()">💾 Guardar límites</button>
+        </div>
+
+        <div>
+          <div class="cfg-title">🔒 Sesión</div>
+          <div style="font-size:.8em;color:var(--text3);margin-bottom:10px" id="cfgUser">—</div>
+          <button class="btn btn-red btn-sm btn-full" onclick="confirmLogout()">🚪 Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <div id="nav">
+    <div class="nb active" id="nb-inicio" onclick="goSec('inicio')">
+      <div class="nb-ico">🏠</div><div class="nb-lbl">Inicio</div>
+    </div>
+    <div class="nb" id="nb-bandeja" onclick="goSec('bandeja')">
+      <div class="nb-ico">💬</div><div class="nb-lbl">Bandeja</div>
+      <div class="nb-badge" id="badgeBandeja"></div>
+    </div>
+    <div class="nb" id="nb-crm" onclick="goSec('crm')">
+      <div class="nb-ico">👥</div><div class="nb-lbl">CRM</div>
+    </div>
+    <div class="nb" id="nb-envios" onclick="goSec('envios')">
+      <div class="nb-ico">📢</div><div class="nb-lbl">Envíos</div>
+    </div>
+    <div class="nb" id="nb-bot" onclick="goSec('bot')">
+      <div class="nb-ico">🤖</div><div class="nb-lbl">Bot</div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ── MODALS ── -->
+<!-- KB Modal -->
+<div class="modal-ov" id="mKB">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <div class="modal-hdr"><div class="modal-title" id="mKBTitle">➕ Nueva pregunta</div><button class="modal-x" onclick="closeModal('mKB')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="kbKey">
+      <div class="fg"><label>Pregunta del cliente</label><input type="text" id="kbPregunta" placeholder="Ej: ¿Cómo funciona el sorteo?"></div>
+      <div class="fg"><label>Respuesta del bot</label><textarea id="kbRespuesta" rows="4" placeholder="Ej: Es muy fácil. Eliges un número del 00 al 99..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('mKB')">Cancelar</button>
+      <button class="btn btn-wa" onclick="guardarKB()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Logout Modal -->
+<div class="modal-ov" id="mLogout">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <div class="modal-hdr"><div class="modal-title">Cerrar sesión</div><button class="modal-x" onclick="closeModal('mLogout')">✕</button></div>
+    <div class="modal-body" style="text-align:center;padding:20px">
+      <div style="font-size:2.5em;margin-bottom:12px">🚪</div>
+      <div style="font-size:.9em;color:var(--text2)">¿Seguro que quieres salir del panel?</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('mLogout')">Cancelar</button>
+      <button class="btn btn-red" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Info cliente modal -->
+<div class="modal-ov" id="mClienteInfo">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <div class="modal-hdr"><div class="modal-title">👤 Info del cliente</div><button class="modal-x" onclick="closeModal('mClienteInfo')">✕</button></div>
+    <div class="modal-body" id="mClienteInfoBody" style="padding-bottom:20px"></div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="loading"><div class="spin"></div></div>
+
+<!-- Snack -->
+<div id="snack"></div>
+
+<script>
+/* ════════════════════════════════════════
+   FIREBASE CONFIG — mismo proyecto admin
+════════════════════════════════════════ */
+firebase.initializeApp({
+  apiKey:"AIzaSyA2_BKI_kA3QdmXFEV08Pd3Vu2yWgJ15hU",
+  authDomain:"bolsillolleno-5d1f8.firebaseapp.com",
+  databaseURL:"https://bolsillolleno-5d1f8-default-rtdb.firebaseio.com",
+  projectId:"bolsillolleno-5d1f8",
+  storageBucket:"bolsillolleno-5d1f8.firebasestorage.app",
+  messagingSenderId:"589773139731",
+  appId:"1:589773139731:web:ab6495056a3697b752f4e6"
+});
+const db = firebase.database();
+const ADMIN = 'admin@bolsillo.com';
+
+/* ── STATE ── */
+let sorteos=[], allOccupied={}, allPending={}, clientesDB=[], kbData={};
+let chatActualTel=null, chatActualNombre=null, chatRef=null;
+let botActivo=false, botPersonalidad='amigo';
+let segActual='todos', crmTabActual='calientes';
+let snkT;
+
+/* ── LOGIN ── */
+function doLogin(){
+  const e=document.getElementById('lgEmail').value.trim();
+  const p=document.getElementById('lgPwd').value;
+  const err=document.getElementById('lgErr');
+  err.style.display='none';
+  if(!e||!p){err.textContent='Completa todos los campos';err.style.display='block';return;}
+  load(true);
+  firebase.auth().signInWithEmailAndPassword(e,p)
+    .then(()=>{load(false);launchApp();})
+    .catch(er=>{
+      load(false);
+      const m={'auth/wrong-password':'Contraseña incorrecta','auth/user-not-found':'Usuario no encontrado','auth/invalid-credential':'Credenciales incorrectas','auth/invalid-email':'Email inválido'};
+      err.textContent=m[er.code]||'Error de autenticación';err.style.display='block';
+    });
+}
+firebase.auth().onAuthStateChanged(u=>{if(u&&u.email===ADMIN)launchApp();});
+
+function launchApp(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').style.display='flex';
+  initAll();
+}
+function confirmLogout(){openModal('mLogout')}
+function doLogout(){firebase.auth().signOut().then(()=>location.reload())}
+
+/* ── LOADING / SNACK ── */
+function load(v){document.getElementById('loading').classList.toggle('active',v)}
+function snack(msg,type='ok'){
+  const el=document.getElementById('snack');
+  const icons={ok:'✅',err:'❌',wa:'📱'};
+  el.textContent=(icons[type]||'✅')+' '+msg;
+  el.className='show'+(type==='err'?' err':type==='wa'?' wa':'');
+  clearTimeout(snkT);snkT=setTimeout(()=>el.className='',3000);
+}
+
+/* ── MODALS ── */
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+document.querySelectorAll('.modal-ov').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('active')}));
+
+/* ── NAV ── */
+function goSec(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  const s=document.getElementById('s-'+id);
+  const nb=document.getElementById('nb-'+id);
+  if(s)s.classList.add('active');
+  if(nb)nb.classList.add('active');
+  if(id==='bandeja')renderChatList();
+  if(id==='crm'){renderCRM();renderFunnel();}
+  if(id==='envios')calcDestinatarios();
+  if(id==='bot'){initBot();}
+}
+
+/* ════════════════════════════════════════
+   INIT — cargar todos los datos Firebase
+════════════════════════════════════════ */
+function initAll(){
+  const u=firebase.auth().currentUser;
+  if(u){const el=document.getElementById('cfgUser');if(el)el.textContent='Sesión: '+u.email;}
+  document.getElementById('dtFecha').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
+  cargarCfg();
+  initBot();
+
+  // Sorteos
+  db.ref('sorteos').on('value',snap=>{
+    const d=snap.val()||{};
+    sorteos=Object.keys(d).map(k=>({id:k,...d[k]}));
+    fillSorteoSel();
+    renderSorteoActivo();
+    calcDestinatarios();
+  });
+
+  // Clientes DB
+  db.ref('clientesDB').on('value',snap=>{
+    const d=snap.val()||{};
+    clientesDB=Object.keys(d).map(k=>({_key:k,...d[k]}));
+    document.getElementById('stClts').textContent=clientesDB.length;
+    calcDestinatarios();
+    renderDashUrgentes();
+  });
+
+  // Occupied (todos los sorteos)
+  db.ref('occupied').on('value',snap=>{
+    allOccupied=snap.val()||{};
+    updateDashStats();
+    calcDestinatarios();
+  });
+
+  // Pending (todos los sorteos)
+  db.ref('pending').on('value',snap=>{
+    allPending=snap.val()||{};
+    const pend=Object.values(allPending).reduce((acc,s)=>acc+Object.keys(s||{}).length,0);
+    document.getElementById('stPend').textContent=pend;
+    document.getElementById('stUrg').textContent=pend;
+    calcDestinatarios();
+    renderDashUrgentes();
+  });
+
+  // Inbox (bandeja)
+  db.ref('wa_inbox').on('value',snap=>{
+    const d=snap.val()||{};
+    const chats=Object.keys(d);
+    document.getElementById('stMsgs').textContent=chats.length;
+    renderChatListData(d);
+    renderRecentMsgs(d);
+    const unread=Object.values(d).filter(c=>c.ultimoDe==='cliente'&&c.sinLeer).length;
+    const badge=document.getElementById('badgeBandeja');
+    if(badge){badge.textContent=unread||'';badge.classList.toggle('show',unread>0);}
+    document.getElementById('unreadCount').textContent=unread>0?`(${unread} sin leer)`:'';
+  });
+
+  // KB
+  db.ref('wa_kb').once('value').then(snap=>{
+    kbData=snap.val()||{};
+    const biz=document.getElementById('kbBizInfo');
+    if(kbData._bizInfo&&biz)biz.value=kbData._bizInfo;
+    renderKB();
+  });
+
+  // Bot siesta
+  db.ref('wa_siesta').once('value').then(snap=>{
+    const d=snap.val()||{};
+    const msg=document.getElementById('siestaMsg');
+    if(d.mensaje&&msg)msg.value=d.mensaje;
+  });
+
+  checkApiStatus();
+}
+
+/* ── SORTEO ACTIVO ── */
+function renderSorteoActivo(){
+  const now=new Date();
+  const activos=sorteos.filter(s=>new Date(s.date)>now).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const card=document.getElementById('sorteoActivoCard');
+  const info=document.getElementById('sorteoActivoInfo');
+  if(!activos.length){if(card)card.style.display='none';return;}
+  if(card)card.style.display='block';
+  const s=activos[0];
+  const fecha=new Date(s.date).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'});
+  const occ=Object.keys(allOccupied[s.id]||{}).length;
+  const pen=Object.keys(allPending[s.id]||{}).length;
+  const disp=100-occ-pen;
+  if(info)info.innerHTML=`
+    🏆 <strong style="color:var(--gold)">${s.name}</strong><br>
+    💰 Premio: <strong>$${parseInt(s.premioMayor||0).toLocaleString()}</strong> · 🎟️ $${parseInt(s.precioNumero||2000).toLocaleString()}/núm<br>
+    📅 Fecha: ${fecha}<br>
+    🟢 ${disp} disponibles · ⏳ ${pen} reservados · ✅ ${occ} pagados`;
+  fillSorteoSel();
+}
+
+function fillSorteoSel(){
+  const sel=document.getElementById('envSorteoSel');
+  if(!sel)return;
+  const curr=sel.value;
+  sel.innerHTML='<option value="">— Todos los sorteos —</option>';
+  sorteos.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sel.appendChild(o);});
+  if(curr)sel.value=curr;
+}
+
+function updateDashStats(){
+  const totalOcc=Object.values(allOccupied).reduce((a,s)=>a+Object.keys(s||{}).length,0);
+  // stats already updated elsewhere
+}
+
+/* ════════════════════════════════════════
+   DASHBOARD — Urgentes + Recientes
+════════════════════════════════════════ */
+function renderDashUrgentes(){
+  const el=document.getElementById('urgList');
+  if(!el)return;
+  const conTel=clientesDB.filter(c=>c.telefono&&c.telefono.length>6);
+  const pendTels=new Set();
+  Object.values(allPending).forEach(s=>{
+    Object.values(s||{}).forEach(n=>{if(n&&n.telefono)pendTels.add(n.telefono.replace(/\D/g,''));});
+  });
+  const urgentes=conTel.filter(c=>pendTels.has((c.telefono||'').replace(/\D/g,'')));
+  if(!urgentes.length){
+    el.innerHTML='<div class="empty" style="padding:16px 0"><div class="et">✅ Sin pendientes urgentes</div></div>';
+    return;
+  }
+  el.innerHTML=urgentes.slice(0,5).map(c=>`
+    <div class="urg-row" onclick="enviarMsgRapido('${c.telefono}','${(c.nombre||'').replace(/'/g,'&#39;')}','recordatorio')">
+      <div class="urg-ava">${(c.nombre||'?')[0].toUpperCase()}</div>
+      <div class="urg-info">
+        <div class="urg-name">${c.nombre||'Sin nombre'}</div>
+        <div class="urg-meta">📱 ${c.telefono} · ⏳ Pago pendiente</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:.72em">⏰ Recordar</button>
+    </div>
+  `).join('')+(urgentes.length>5?`<div style="text-align:center;font-size:.75em;color:var(--text3);padding:8px">+${urgentes.length-5} más pendientes</div>`:'');
+}
+
+function renderRecentMsgs(data){
+  const el=document.getElementById('recentMsgs');
+  if(!el)return;
+  const chats=Object.entries(data).map(([tel,c])=>({tel,...c})).sort((a,b)=>(b.ultimoTs||0)-(a.ultimoTs||0)).slice(0,4);
+  if(!chats.length){el.innerHTML='<div class="empty" style="padding:16px 0"><div class="et">Sin mensajes recientes</div></div>';return;}
+  el.innerHTML=chats.map(c=>{
+    const nom=c.nombre||c.tel||'Desconocido';
+    const hora=c.ultimoTs?new Date(c.ultimoTs).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'';
+    const isNew=c.ultimoDe==='cliente';
+    return`<div class="row${isNew?' unread':''}" onclick="abrirChat('${c.tel}','${(nom).replace(/'/g,'&#39;')}')">
+      <div class="r-ava">${nom[0].toUpperCase()}</div>
+      <div class="r-body">
+        <div class="r-name">${nom}</div>
+        <div class="r-sub">${c.ultimoMensaje||'Sin mensajes'}</div>
+      </div>
+      <div class="r-right">
+        <div class="r-time">${hora}</div>
+        ${isNew?'<div class="badge bg-wa" style="font-size:.6em;padding:2px 6px">Nuevo</div>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   BANDEJA — Chat list
+════════════════════════════════════════ */
+let _inboxData={};
+function renderChatListData(data){
+  _inboxData=data;
+  if(document.getElementById('s-bandeja').classList.contains('active'))renderChatList();
+}
+
+function renderChatList(){
+  const el=document.getElementById('chatList');
+  if(!el)return;
+  const chats=Object.entries(_inboxData).map(([tel,c])=>({tel,...c})).sort((a,b)=>(b.ultimoTs||0)-(a.ultimoTs||0));
+  if(!chats.length){el.innerHTML='<div class="empty"><div class="ei">💬</div><div class="et">No hay conversaciones aún</div></div>';return;}
+  el.innerHTML=chats.map(c=>{
+    const nom=c.nombre||c.tel||'Desconocido';
+    const hora=c.ultimoTs?new Date(c.ultimoTs).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'';
+    const isNew=c.ultimoDe==='cliente';
+    return`<div class="row${isNew?' unread':''}" onclick="abrirChat('${c.tel}','${nom.replace(/'/g,'&#39;')}')">
+      <div class="r-ava">${nom[0].toUpperCase()}</div>
+      <div class="r-body">
+        <div class="r-name">${nom}</div>
+        <div class="r-sub">${c.ultimoMensaje||'Sin mensajes'}</div>
+      </div>
+      <div class="r-right">
+        <div class="r-time">${hora}</div>
+        ${isNew?'<div style="width:10px;height:10px;border-radius:50%;background:var(--wa);flex-shrink:0"></div>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirChat(tel,nombre){
+  chatActualTel=tel; chatActualNombre=nombre;
+  document.getElementById('cvName').textContent=nombre||tel;
+  document.getElementById('cvAva').textContent=(nombre||tel)[0].toUpperCase();
+  document.getElementById('cvLast').textContent='📱 '+tel;
+  document.getElementById('chatView').classList.add('open');
+  document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;color:var(--text3);font-size:.78em;padding:20px">Cargando mensajes…</div>';
+
+  // Marcar como leído
+  db.ref('wa_inbox/'+tel).update({sinLeer:false}).catch(()=>{});
+
+  if(chatRef){db.ref('wa_inbox/'+chatActualTel+'/mensajes').off('value',chatRef);chatRef=null;}
+  chatRef=db.ref('wa_inbox/'+tel+'/mensajes').on('value',snap=>{
+    const msgs=snap.val()||{};
+    renderMsgsChat(msgs);
+  });
+}
+
+function renderMsgsChat(msgs){
+  const cont=document.getElementById('chatMsgs');
+  const sorted=Object.values(msgs).sort((a,b)=>a.ts-b.ts);
+  if(!sorted.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);font-size:.78em;padding:20px">Sin mensajes aún</div>';return;}
+  const wasAtBottom=cont.scrollHeight-cont.scrollTop-cont.clientHeight<80;
+  cont.innerHTML=sorted.map(m=>{
+    const cls=m.de==='admin'?'out':m.de==='bot'?'bot':'in';
+    const hora=m.ts?new Date(m.ts).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'';
+    const txt=(m.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+    return`<div class="msg ${cls}"><span style="white-space:pre-wrap">${txt}</span><div class="msg-time">${hora}${m.de==='admin'?' ✓✓':m.de==='bot'?' 🤖':''}</div></div>`;
+  }).join('');
+  if(wasAtBottom||sorted.length<5)cont.scrollTop=cont.scrollHeight;
+}
+
+function cerrarChat(){
+  if(chatRef){db.ref('wa_inbox/'+(chatActualTel||'')+'/mensajes').off('value',chatRef);chatRef=null;}
+  chatActualTel=null;chatActualNombre=null;
+  document.getElementById('chatView').classList.remove('open');
+  document.getElementById('chatInp').value='';
+}
+
+async function enviarMsgChat(){
+  const inp=document.getElementById('chatInp');
+  const texto=(inp?inp.value:'').trim();
+  if(!texto||!chatActualTel){snack('Sin mensaje o destinatario','err');return;}
+  inp.value='';inp.style.height='';
+  const {token,phoneId}=getCfg();
+  const numRaw=chatActualTel.replace(/\D/g,'');
+  const numFinal=numRaw.startsWith('57')?numRaw:'57'+numRaw;
+  const ts=Date.now();
+  const msgId='admin_'+ts;
+  await db.ref('wa_inbox/'+chatActualTel+'/mensajes/'+msgId).set({texto,de:'admin',ts,msgId});
+  await db.ref('wa_inbox/'+chatActualTel).update({ultimoMensaje:texto,ultimoTs:ts,ultimoDe:'admin',nombre:chatActualNombre||chatActualTel});
+  if(token&&phoneId){
+    try{
+      const r=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({messaging_product:'whatsapp',to:numFinal,type:'text',text:{body:texto}})
+      });
+      const d=await r.json();
+      if(!d.messages)snack('API: '+(d.error?.message||'error'),'err');
+    }catch(e){snack('Error de red','err');}
+  } else {
+    window.open(`https://wa.me/${numFinal}?text=${encodeURIComponent(texto)}`,'_blank');
+    snack('Sin API — abriendo WhatsApp web','wa');
+  }
+}
+
+async function chatSugerirIA(){
+  if(!chatActualTel)return;
+  const cont=document.getElementById('chatMsgs');
+  const bubbles=[...cont.querySelectorAll('.msg.in')];
+  const ultimo=bubbles.length?bubbles[bubbles.length-1].querySelector('span')?.textContent?.trim()||'...':'(primer mensaje)';
+  const s=sorteos[0];
+  const sys=`Eres el asistente de Bol$illo Lleno x5 (sorteos Colombia). 
+Personalidad: ${botPersonalidad}.
+Sugiere UNA respuesta corta y natural (máx 3 líneas) al cliente. 
+Responde SOLO con el mensaje, sin comillas ni explicación.
+Sorteo activo: ${s?s.name+' | Premio: $'+parseInt(s.premioMayor||0).toLocaleString():'—'}
+Nequi: 3502429433 | Bre-B: @NEQUICAM8170`;
+  const inp=document.getElementById('chatInp');
+  if(inp){inp.placeholder='🤖 Generando…';inp.disabled=true;}
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:200,system:sys,messages:[{role:'user',content:'Mensaje del cliente: '+ultimo}]})
+    });
+    const d=await r.json();
+    const txt=(d.content&&d.content[0]&&d.content[0].text)||'';
+    if(inp){inp.value=txt;inp.focus();}
+  }catch(e){snack('Error IA','err');}
+  finally{if(inp){inp.placeholder='Escribe un mensaje…';inp.disabled=false;}}
+}
+
+function qReply(tipo){
+  const s=sorteos[0];
+  const url='https://bolsillolleno.github.io/SorteosBolsilloLleno/';
+  const m={
+    datos_pago:'💚 Datos de pago:\n*Nequi:* 3502429433\n*Bre-B:* @NEQUICAM8170\n👤 Camilo Andres Martinez Cordoba',
+    numeros:'🔗 Elige y ve los números disponibles aquí 👇\n'+url,
+    como_funciona:'🎟️ Eliges un número del 00 al 99.\n¡Tienes *5 maneras de ganar* con ese número!\n💰 Premio Mayor · ✨ Secos 1, 2, 3 y 4.',
+    gracias:'🙏 ¡Muchas gracias! Estamos para servirte.\n¡Mucha suerte! 🍀 *Bol$illo Lleno x5*'
+  };
+  const inp=document.getElementById('chatInp');
+  if(inp){inp.value=m[tipo]||'';inp.focus();}
+}
+
+function chatAbrirConfirm(){
+  if(!chatActualTel)return;
+  const tel=chatActualTel.replace(/\D/g,'');
+  const numFinal=tel.startsWith('57')?tel:'57'+tel;
+  window.open('https://wa.me/'+numFinal,'_blank');
+}
+
+function chatInfoCliente(){
+  if(!chatActualTel)return;
+  const tel=(chatActualTel||'').replace(/\D/g,'');
+  const cliente=clientesDB.find(c=>(c.telefono||'').replace(/\D/g,'')===(tel.replace('57','')));
+  let compras=0;
+  Object.values(allOccupied).forEach(s=>{Object.values(s||{}).forEach(n=>{if(n&&(n.telefono||'').replace(/\D/g,'')===tel.replace('57',''))compras++;});});
+  let pendiente=false;
+  Object.values(allPending).forEach(s=>{Object.values(s||{}).forEach(n=>{if(n&&(n.telefono||'').replace(/\D/g,'')===tel.replace('57',''))pendiente=true;});});
+  const body=document.getElementById('mClienteInfoBody');
+  body.innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:rgba(37,211,102,.06);border-radius:var(--rl);border:1px solid rgba(37,211,102,.15)">
+      <div style="width:48px;height:48px;border-radius:14px;background:rgba(37,211,102,.15);display:flex;align-items:center;justify-content:center;font-size:1.4em;font-weight:900;color:var(--wa2)">${(chatActualNombre||chatActualTel||'?')[0].toUpperCase()}</div>
+      <div><div style="font-weight:900;font-size:.95em">${chatActualNombre||'Sin nombre'}</div><div style="font-size:.75em;color:var(--text3);margin-top:2px">📱 ${chatActualTel}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="text-align:center;padding:12px;background:var(--surface2);border-radius:var(--r)">
+        <div style="font-size:1.6em;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--wa2)">${compras}</div>
+        <div style="font-size:.68em;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Compras</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:var(--surface2);border-radius:var(--r)">
+        <div style="font-size:1.1em;font-weight:900;color:${pendiente?'var(--orange)':'var(--wa2)'}">${pendiente?'⏳ Pendiente':'✅ Al día'}</div>
+        <div style="font-size:.68em;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px">Estado</div>
+      </div>
+    </div>
+    ${cliente?`<div style="font-size:.78em;color:var(--text3);padding:10px;background:rgba(0,0,0,.3);border-radius:var(--r)">📋 En clientesDB: ${cliente.nombre||'—'}</div>`:'<div style="font-size:.78em;color:var(--text3);padding:10px;background:rgba(0,0,0,.3);border-radius:var(--r)">ℹ️ No está en la base de clientes</div>'}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-wa btn-sm" style="flex:1" onclick="enviarMsgRapido('${chatActualTel}','${(chatActualNombre||'').replace(/'/g,'')}','recordatorio');closeModal('mClienteInfo')">⏰ Recordatorio</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeModal('mClienteInfo')">Cerrar</button>
+    </div>`;
+  openModal('mClienteInfo');
+}
+
+/* ════════════════════════════════════════
+   CRM
+════════════════════════════════════════ */
+let _comprasPorTel={}, _pendientePorTel={};
+
+function buildCRMData(){
+  _comprasPorTel={};_pendientePorTel={};
+  Object.values(allOccupied).forEach(s=>{
+    if(!s||typeof s!=='object')return;
+    Object.values(s).forEach(n=>{if(n&&n.telefono){const t=(n.telefono||'').replace(/\D/g,'');if(t.length>5)_comprasPorTel[t]=(_comprasPorTel[t]||0)+1;}});
+  });
+  Object.values(allPending).forEach(s=>{
+    if(!s||typeof s!=='object')return;
+    Object.values(s).forEach(n=>{if(n&&n.telefono){const t=(n.telefono||'').replace(/\D/g,'');if(t.length>5)_pendientePorTel[t]=true;}});
+  });
+}
+
+function crmTab(tab,el){
+  crmTabActual=tab;
+  document.querySelectorAll('#crmTabs .tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderCRM();
+}
+
+function renderCRM(){
+  buildCRMData();
+  const el=document.getElementById('crmList');
+  if(!el)return;
+  const conTel=clientesDB.filter(c=>c.telefono&&c.telefono.length>6);
+  const gt=c=>(c.telefono||'').replace(/\D/g,'');
+
+  let lista=[];
+  if(crmTabActual==='calientes') lista=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=1&&(_comprasPorTel[gt(c)]||0)<5);
+  else if(crmTabActual==='pendientes') lista=conTel.filter(c=>!!_pendientePorTel[gt(c)]);
+  else if(crmTabActual==='nuevos') lista=conTel.filter(c=>!_comprasPorTel[gt(c)]&&!_pendientePorTel[gt(c)]);
+  else if(crmTabActual==='frecuentes') lista=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=5);
+  else lista=conTel;
+
+  if(!lista.length){el.innerHTML='<div class="empty"><div class="ei">👥</div><div class="et">Sin clientes en este segmento</div></div>';return;}
+  const colors=['#25d366','#f59e0b','#3b82f6','#ef4444','#a855f7','#ec4899'];
+  el.innerHTML=lista.slice(0,50).map((c,i)=>{
+    const comp=_comprasPorTel[gt(c)]||0;
+    const pend=!!_pendientePorTel[gt(c)];
+    const bg=colors[i%colors.length];
+    return`<div class="crm-row">
+      <div class="crm-ava" style="background:${bg}22;color:${bg}">${(c.nombre||'?')[0].toUpperCase()}</div>
+      <div class="crm-info">
+        <div class="crm-name">${c.nombre||'Sin nombre'}</div>
+        <div class="crm-meta">📱 ${c.telefono} · ${comp} compra${comp!==1?'s':''} ${pend?'· ⏳ pendiente':''}</div>
+      </div>
+      <div class="crm-acts">
+        ${pend?`<button class="btn btn-ghost btn-sm btn-ico" onclick="enviarMsgRapido('${c.telefono}','${(c.nombre||'').replace(/'/g,'')}','recordatorio')" title="Recordatorio">⏰</button>`:''}
+        <button class="btn btn-wa btn-sm btn-ico" onclick="abrirChat('${c.telefono}','${(c.nombre||'').replace(/'/g,'')}')" title="Chat">💬</button>
+      </div>
+    </div>`;
+  }).join('')+(lista.length>50?`<div style="text-align:center;font-size:.76em;color:var(--text3);padding:10px">+${lista.length-50} más clientes</div>`:'');
+}
+
+function renderFunnel(){
+  buildCRMData();
+  const conTel=clientesDB.filter(c=>c.telefono&&c.telefono.length>6);
+  const gt=c=>(c.telefono||'').replace(/\D/g,'');
+  const total=conTel.length||1;
+  const ganados=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=1).length;
+  const calientes=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=1&&(_comprasPorTel[gt(c)]||0)<5).length;
+  const pendientes=conTel.filter(c=>!!_pendientePorTel[gt(c)]).length;
+  const nuevos=conTel.filter(c=>!_comprasPorTel[gt(c)]&&!_pendientePorTel[gt(c)]).length;
+  const datos=[
+    {label:'Total en BD',cnt:total,pct:100,color:'var(--wa2)'},
+    {label:'Han comprado',cnt:ganados,pct:Math.round(ganados/total*100),color:'var(--gold2)'},
+    {label:'Pendientes pago',cnt:pendientes,pct:Math.round(pendientes/total*100),color:'var(--orange)'},
+    {label:'Nuevos sin comprar',cnt:nuevos,pct:Math.round(nuevos/total*100),color:'var(--blue)'},
+  ];
+  const el=document.getElementById('funnelBars');
+  if(!el)return;
+  el.innerHTML=datos.map(d=>`
+    <div class="fn-row">
+      <div class="fn-lbl" style="color:${d.color}">${d.label}</div>
+      <div class="fn-bar-wrap"><div class="fn-bar" style="width:${d.pct}%;background:${d.color}"></div></div>
+      <div class="fn-cnt" style="color:${d.color}">${d.cnt}</div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════
+   ENVÍOS
+════════════════════════════════════════ */
+const TPLS={
+  recordatorio:(s,url)=>`⏰ Hola! 👋 Tu número en *${s?s.name:'Bol$illo Lleno'}* está reservado pero aún no hemos recibido el pago.\n\n💳 Paga fácil:\n💚 *Nequi:* 3502429433\n🔑 *Bre-B:* @NEQUICAM8170\n👤 Camilo Andres Martinez Cordoba\n\n⚠️ Tu número se libera en 1 hora si no llega el pago. ¡Aún puedes participar! 🙏`,
+  urgencia:(s,url)=>`🔥 ¡El sorteo *${s?s.name:'Bol$illo Lleno x5'}* cierra muy pronto! Quedan pocos números disponibles 👀\n\n💰 Premio Mayor: *$${parseInt(s?.premioMayor||100000).toLocaleString()}*\n🎯 ¿Todavía no tienes tu número? ¡Es tu último chance!\n\n${url}`,
+  bienvenida:(s,url)=>`👋 ¡Hola! Bienvenido a *Bol$illo Lleno x5* 🤑\n\nTenemos *5 maneras de ganar* con un solo número:\n💰 Premio Mayor · ✨ Seco 1,2,3,4\n\n🎟️ Elige tu número aquí 👇\n${url}\n\n¡Mucha suerte! 🍀 *Que Dios te bendiga*`,
+  vip:(s,url)=>`⭐ *¡Mensaje exclusivo para ti!* ⭐\n\nGracias por tu confianza en *Bol$illo Lleno x5* 🙏\n\nComo cliente frecuente tienes prioridad en el sorteo activo.\n💰 Premio: *$${parseInt(s?.premioMayor||100000).toLocaleString()}*\n\nVe los números disponibles:\n${url}`,
+  reactivar:(s,url)=>`💤 ¡Hola! Hace tiempo no nos visitas y te extrañamos 🙏\n\nTenemos un sorteo especial activo 🎟️\n🏆 Premio Mayor: *$${parseInt(s?.premioMayor||100000).toLocaleString()}*\n\nVuelve y participa:\n${url}\n\n*Dios te bendiga* 🍀`,
+  ganador:(s,url)=>`🏆 *¡TENEMOS GANADOR* esta noche en *Bol$illo Lleno x5*! 🎉\n\nFelicitaciones al afortunado. ¡Gracias a todos! 🙏\n\n¿Quieres ser el próximo ganador?\n👇 Reserva ya:\n${url}`,
+};
+
+function loadTpl(tipo){
+  const s=sorteos[0];
+  const url='https://bolsillolleno.github.io/SorteosBolsilloLleno/';
+  const msg=TPLS[tipo]?TPLS[tipo](s,url):'';
+  const ed=document.getElementById('msgEditor');
+  if(ed){ed.value=msg;updatePreview();}
+  snack('Plantilla cargada 📝');
+}
+
+function updatePreview(){
+  const txt=document.getElementById('msgEditor')?.value||'';
+  const el=document.getElementById('msgPreview');
+  if(!el)return;
+  if(!txt){el.innerHTML='<span style="color:var(--text3);font-size:.9em">Tu mensaje aparecerá aquí…</span>';return;}
+  const html=txt
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*([^*]+)\*/g,'<strong>$1</strong>')
+    .replace(/_([^_]+)_/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>');
+  el.innerHTML=html;
+}
+
+function limpiarEditor(){
+  const ed=document.getElementById('msgEditor');if(ed)ed.value='';updatePreview();
+}
+
+function setSegmento(seg){
+  segActual=seg;
+  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('seg-'+seg);
+  if(btn)btn.classList.add('active');
+  const badge=document.getElementById('destBadge');
+  if(badge)badge.textContent={todos:'Todos',pendientes:'Sin pagar',frecuentes:'Frecuentes',nuevos:'Nuevos'}[seg]||seg;
+  calcDestinatarios();
+}
+
+function calcDestinatarios(){
+  buildCRMData();
+  const conTel=clientesDB.filter(c=>c.telefono&&c.telefono.length>6);
+  const gt=c=>(c.telefono||'').replace(/\D/g,'');
+  const todos=conTel.length;
+  const pendientes=conTel.filter(c=>!!_pendientePorTel[gt(c)]).length;
+  const frecuentes=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=3).length;
+  const nuevos=conTel.filter(c=>!_comprasPorTel[gt(c)]&&!_pendientePorTel[gt(c)]).length;
+  const map={todos,pendientes,frecuentes,nuevos};
+  Object.entries(map).forEach(([k,v])=>{const e=document.getElementById('scnt-'+k);if(e)e.textContent=v;});
+  const cnt=map[segActual]||0;
+  const el=document.getElementById('destCount');if(el)el.textContent=cnt;
+}
+
+async function generarConIA(){
+  const s=sorteos[0];
+  const seg={todos:'todos los clientes',pendientes:'clientes con pago pendiente',frecuentes:'clientes frecuentes',nuevos:'clientes nuevos'}[segActual]||'clientes';
+  const prompt=`Eres experto en ventas por WhatsApp para sorteos en Colombia (Bol$illo Lleno x5).
+Crea un mensaje de WhatsApp PODEROSO para ${seg}. Sorteo: "${s?s.name:'Bol$illo Lleno x5'}" con premio $${parseInt(s?.premioMayor||100000).toLocaleString()} COP.
+Reglas:
+- Usar urgencia, escasez y prueba social (Cialdini)
+- Mencionar las 5 maneras de ganar
+- Máximo 6 líneas
+- Emojis estratégicos
+- CTA claro al final
+- Tono colombiano, cálido, con "Dios te bendiga" o similar
+Responde SOLO con el mensaje.`;
+  const ed=document.getElementById('msgEditor');
+  if(ed)ed.value='🤖 Generando con IA…';updatePreview();
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:350,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await r.json();
+    const txt=(d.content&&d.content[0]&&d.content[0].text)||'Error generando';
+    if(ed){ed.value=txt;updatePreview();}
+    snack('🤖 Mensaje generado');
+  }catch(e){if(ed)ed.value='';snack('Error IA','err');}
+}
+
+async function enviarCampana(){
+  const msg=document.getElementById('msgEditor')?.value.trim();
+  if(!msg){snack('Escribe un mensaje primero','err');return;}
+  const {token,phoneId}=getCfg();
+  if(!token||!phoneId){snack('Configura el token de Meta primero','err');goSec('cfg');return;}
+  buildCRMData();
+  const conTel=clientesDB.filter(c=>c.telefono&&c.telefono.length>6);
+  const gt=c=>(c.telefono||'').replace(/\D/g,'');
+  let dest=conTel;
+  if(segActual==='pendientes') dest=conTel.filter(c=>!!_pendientePorTel[gt(c)]);
+  else if(segActual==='frecuentes') dest=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=3);
+  else if(segActual==='nuevos') dest=conTel.filter(c=>!_comprasPorTel[gt(c)]&&!_pendientePorTel[gt(c)]);
+  if(!dest.length){snack('Sin destinatarios en este segmento','err');return;}
+  if(!confirm(`¿Enviar a ${dest.length} cliente(s)?`))return;
+
+  const maxHora=parseInt(localStorage.getItem('wa_maxHora')||'15');
+  const intervalo=parseInt(localStorage.getItem('wa_intervalo')||'5000');
+  const btnEnv=document.getElementById('btnEnviar');
+  const progSec=document.getElementById('progSection');
+  const progBar=document.getElementById('progBar');
+  const progTxt=document.getElementById('progTxt');
+  const progPct=document.getElementById('progPct');
+  const log=document.getElementById('envLog');
+  btnEnv.disabled=true;progSec.style.display='block';log.innerHTML='';
+  let ok=0,err=0,enviados=0;
+
+  for(let i=0;i<dest.length;i++){
+    if(enviados>=maxHora){log.innerHTML+=`<div class="log-info">⏸️ Límite de ${maxHora} mensajes/hora alcanzado.</div>`;break;}
+    const c=dest[i];
+    const pct=Math.round(((i+1)/dest.length)*100);
+    progBar.style.width=pct+'%';
+    progTxt.textContent=`Enviando a ${c.nombre||c.telefono}…`;
+    progPct.textContent=pct+'%';
+    try{
+      const tel=(c.telefono||'').replace(/\D/g,'');
+      const numFinal=tel.startsWith('57')?tel:'57'+tel;
+      const res=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({messaging_product:'whatsapp',to:numFinal,type:'text',text:{body:msg}})
+      });
+      const data=await res.json();
+      if(data.messages){
+        ok++;enviados++;
+        log.innerHTML+=`<div class="log-ok">✅ ${c.nombre||c.telefono} — enviado</div>`;
+        // Guardar en inbox
+        const ts=Date.now();
+        await db.ref('wa_inbox/'+numFinal).update({ultimoMensaje:msg.substring(0,60),ultimoTs:ts,ultimoDe:'admin',nombre:c.nombre||''});
+        await db.ref('wa_logs').push({tipo:'campana',destino:numFinal,ts,segmento:segActual,estado:'enviado'});
+      } else {
+        err++;
+        log.innerHTML+=`<div class="log-err">❌ ${c.nombre||c.telefono} — ${data.error?.message||'Error'}</div>`;
+      }
+    }catch(e){
+      err++;
+      log.innerHTML+=`<div class="log-err">❌ ${c.nombre||c.telefono} — Error de red</div>`;
+    }
+    log.scrollTop=log.scrollHeight;
+    if(i<dest.length-1)await new Promise(r=>setTimeout(r,intervalo));
+  }
+  btnEnv.disabled=false;
+  progTxt.textContent=`Completado: ${ok} enviados, ${err} errores`;
+  snack(`✅ ${ok} mensajes enviados`,'wa');
+}
+
+async function enviarMsgRapido(telefono,nombre,tipo){
+  const s=sorteos[0];
+  const url='https://bolsillolleno.github.io/SorteosBolsilloLleno/';
+  const msg=TPLS[tipo]?TPLS[tipo](s,url):'Hola! Te contactamos de Bol$illo Lleno.';
+  const {token,phoneId}=getCfg();
+  if(!token||!phoneId){
+    const tel=(telefono||'').replace(/\D/g,'');
+    const numFinal=tel.startsWith('57')?tel:'57'+tel;
+    window.open(`https://wa.me/${numFinal}?text=${encodeURIComponent(msg)}`,'_blank');
+    return;
+  }
+  const tel=(telefono||'').replace(/\D/g,'');
+  const numFinal=tel.startsWith('57')?tel:'57'+tel;
+  try{
+    const r=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({messaging_product:'whatsapp',to:numFinal,type:'text',text:{body:msg}})
+    });
+    const d=await r.json();
+    if(d.messages){
+      snack(`📱 Mensaje enviado a ${nombre}`,'wa');
+      const ts=Date.now();
+      await db.ref('wa_inbox/'+numFinal).update({ultimoMensaje:msg.substring(0,60),ultimoTs:ts,ultimoDe:'admin',nombre:nombre||''});
+    } else snack('Error: '+(d.error?.message||'desconocido'),'err');
+  }catch(e){snack('Error de red','err');}
+}
+
+/* ════════════════════════════════════════
+   BOT
+════════════════════════════════════════ */
+function initBot(){
+  const saved=localStorage.getItem('bot_activo');
+  botActivo=saved==='true';
+  const p=localStorage.getItem('bot_personalidad')||'amigo';
+  setPersonalidad(p, document.getElementById('bp-'+p));
+  updateBotUI();
+
+  const savedMsg=localStorage.getItem('wa_siesta_msg');
+  const siestaEl=document.getElementById('siestaMsg');
+  if(savedMsg&&siestaEl)siestaEl.value=savedMsg;
+}
+
+function toggleBot(){
+  botActivo=!botActivo;
+  localStorage.setItem('bot_activo',botActivo);
+  db.ref('wa_siesta').update({activa:botActivo});
+  updateBotUI();
+  snack(botActivo?'🤖 Bot activado — respondiendo 24/7':'🛑 Bot desactivado','wa');
+}
+
+function updateBotUI(){
+  const toggle=document.getElementById('botToggle');
+  const title=document.getElementById('botTitleText');
+  const sub=document.getElementById('botSubText');
+  if(toggle)toggle.classList.toggle('on',botActivo);
+  if(title)title.textContent=botActivo?'Bot activo 🟢':'Bot desactivado 🔴';
+  if(sub)sub.textContent=botActivo?'Respondiendo automáticamente a los clientes 24/7 ✨':'Actívalo para responder automáticamente a los clientes 24/7';
+}
+
+const PERS_DESC={
+  amigo:'El bot habla como un amigo de confianza, cercano y cálido. Usa emojis con moderación. Genera confianza antes de vender.',
+  emocion:'El bot genera emoción y entusiasmo. Usa exclamaciones, emojis abundantes y frases que activan dopamina.',
+  urgente:'El bot usa escasez, urgencia y FOMO. Cada mensaje invita a actuar YA. Presión suave pero constante.',
+  pro:'El bot es profesional y preciso. Responde con datos concretos y propuestas de valor claras. Tono ejecutivo.'
+};
+
+function setPersonalidad(tipo,el){
+  botPersonalidad=tipo;
+  document.querySelectorAll('.pers-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const desc=document.getElementById('persDesc');
+  if(desc)desc.textContent=PERS_DESC[tipo]||'';
+  localStorage.setItem('bot_personalidad',tipo);
+}
+
+function guardarSiesta(){
+  const msg=document.getElementById('siestaMsg')?.value.trim();
+  if(!msg){snack('Escribe un mensaje','err');return;}
+  localStorage.setItem('wa_siesta_msg',msg);
+  db.ref('wa_siesta').update({mensaje:msg});
+  snack('Mensaje de ausencia guardado ✅');
+}
+
+/* ── KB ── */
+function renderKB(){
+  const cont=document.getElementById('kbList');
+  if(!cont)return;
+  const items=Object.entries(kbData).filter(([k])=>k!=='_bizInfo');
+  if(!items.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:.82em">Sin preguntas aún. Agrega la primera ↑</div>';return;}
+  cont.innerHTML=items.map(([k,v])=>`
+    <div class="kb-item">
+      <div class="kb-q">❓ ${v.pregunta||''}</div>
+      <div class="kb-a">${v.respuesta||''}</div>
+      <div class="kb-acts">
+        <button class="btn btn-ghost btn-sm" onclick="openKBModal('${k}')">✏️ Editar</button>
+        <button class="btn btn-sm" style="background:rgba(239,68,68,.1);color:var(--red2)" onclick="eliminarKB('${k}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openKBModal(key){
+  document.getElementById('kbKey').value=key||'';
+  document.getElementById('mKBTitle').textContent=key?'Editar pregunta':'➕ Nueva pregunta';
+  document.getElementById('kbPregunta').value=key&&kbData[key]?kbData[key].pregunta||'':'';
+  document.getElementById('kbRespuesta').value=key&&kbData[key]?kbData[key].respuesta||'':'';
+  openModal('mKB');
+}
+
+function guardarKB(){
+  const key=document.getElementById('kbKey').value||Date.now().toString();
+  const pregunta=document.getElementById('kbPregunta')?.value.trim();
+  const respuesta=document.getElementById('kbRespuesta')?.value.trim();
+  if(!pregunta||!respuesta){snack('Completa pregunta y respuesta','err');return;}
+  load(true);
+  db.ref('wa_kb/'+key).set({pregunta,respuesta}).then(()=>{
+    kbData[key]={pregunta,respuesta};load(false);closeModal('mKB');renderKB();snack('Pregunta guardada ✅');
+  }).catch(()=>{load(false);snack('Error','err');});
+}
+
+function eliminarKB(key){
+  if(!confirm('¿Eliminar esta pregunta?'))return;
+  load(true);
+  db.ref('wa_kb/'+key).remove().then(()=>{
+    delete kbData[key];load(false);renderKB();snack('Pregunta eliminada');
+  }).catch(()=>{load(false);snack('Error','err');});
+}
+
+function guardarBizInfo(){
+  const info=document.getElementById('kbBizInfo')?.value.trim();
+  if(!info){snack('Escribe la info del negocio','err');return;}
+  load(true);
+  db.ref('wa_kb/_bizInfo').set(info).then(()=>{
+    kbData._bizInfo=info;load(false);snack('Contexto del bot guardado ✅');
+  }).catch(()=>{load(false);snack('Error','err');});
+}
+
+/* ════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════ */
+function getCfg(){
+  return{
+    token:localStorage.getItem('wa_token')||'',
+    phoneId:localStorage.getItem('wa_phoneId')||'',
+    numero:localStorage.getItem('wa_numero')||''
+  };
+}
+
+function cargarCfg(){
+  const{token,phoneId,numero}=getCfg();
+  const t=document.getElementById('cfgToken');
+  const p=document.getElementById('cfgPhoneId');
+  const n=document.getElementById('cfgNumero');
+  if(t)t.value=token;if(p)p.value=phoneId;if(n)n.value=numero;
+  const maxHora=document.getElementById('cfgMaxHora');
+  const intervalo=document.getElementById('cfgIntervalo');
+  if(maxHora)maxHora.value=localStorage.getItem('wa_maxHora')||'15';
+  if(intervalo)intervalo.value=localStorage.getItem('wa_intervalo')||'5000';
+  checkApiStatus();
+}
+
+function guardarCfg(){
+  const t=document.getElementById('cfgToken')?.value.trim();
+  const p=document.getElementById('cfgPhoneId')?.value.trim();
+  const n=document.getElementById('cfgNumero')?.value.trim();
+  if(!t||!p){snack('Completa Token y Phone ID','err');return;}
+  localStorage.setItem('wa_token',t);
+  localStorage.setItem('wa_phoneId',p);
+  if(n)localStorage.setItem('wa_numero',n);
+  checkApiStatus();
+  snack('Configuración guardada ✅');
+}
+
+function guardarLimites(){
+  const m=document.getElementById('cfgMaxHora')?.value;
+  const i=document.getElementById('cfgIntervalo')?.value;
+  if(m)localStorage.setItem('wa_maxHora',m);
+  if(i)localStorage.setItem('wa_intervalo',i);
+  snack('Límites guardados ✅');
+}
+
+function checkApiStatus(){
+  const{token,phoneId}=getCfg();
+  const dot=document.getElementById('apiDot');
+  const cfgDot=document.getElementById('cfgDot');
+  const tbStatus=document.getElementById('tbStatus');
+  const cfgStatus=document.getElementById('cfgStatusTxt');
+  const ok=!!(token&&phoneId);
+  if(dot){dot.classList.toggle('on',ok);dot.classList.toggle('warn',!ok);}
+  if(cfgDot){cfgDot.classList.toggle('on',ok);cfgDot.classList.toggle('warn',!ok);}
+  if(tbStatus)tbStatus.textContent=ok?'API Meta conectada':'Sin API — abre WhatsApp Web';
+  if(cfgStatus)cfgStatus.textContent=ok?'✅ API Meta WhatsApp configurada':'⚠️ Sin credenciales — se usará WhatsApp Web como fallback';
+}
+
+async function testApi(){
+  const{token,phoneId,numero}=getCfg();
+  const res=document.getElementById('cfgTestResult');
+  if(!res)return;
+  res.style.display='block';
+  if(!token||!phoneId||!numero){res.style.color='var(--red2)';res.textContent='⚠️ Completa token, Phone ID y número de prueba';return;}
+  res.style.color='var(--text3)';res.textContent='🔄 Enviando…';
+  try{
+    const r=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({messaging_product:'whatsapp',to:numero,type:'text',text:{body:'🧪 Prueba WA Panel — Bol$illo Lleno ✅'}})
+    });
+    const d=await r.json();
+    if(d.messages){res.style.color='var(--wa2)';res.textContent='✅ Conexión exitosa! Revisa WhatsApp.';}
+    else{res.style.color='var(--red2)';res.textContent='❌ '+(d.error?.message||'Error desconocido');}
+  }catch(e){res.style.color='var(--red2)';res.textContent='❌ Error de red';}
+}
+
+/* ── INIT FINAL ── */
+document.getElementById('lgEmail').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+</script>
+</body>
+</html>
