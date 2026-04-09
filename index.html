@@ -663,6 +663,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
             <div style="text-align:center;margin-top:10px">
               <span class="qr-status-badge qr-waiting" id="qrBadge">⏳ Esperando escaneo…</span>
             </div>
+            <div style="text-align:center;margin-top:8px">
+              <button class="btn btn-ghost btn-sm" onclick="fetchQRManual()" style="font-size:.72em">🔄 Refrescar QR</button>
+            </div>
           </div>
           <div id="waConnectedMsg" style="display:none;text-align:center;padding:12px;background:rgba(37,211,102,.08);border-radius:var(--r);border:1px solid rgba(37,211,102,.2)">
             <div style="font-size:1.6em">✅</div>
@@ -677,32 +680,26 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
         <span style="color:var(--text3)">›</span>
       </a>
 
-      <!-- Meta API -->
+      <!-- WhatsApp Business Bot Info -->
       <div class="card">
-        <div class="cfg-section">
-          <div class="cfg-title">🔑 Meta WhatsApp Cloud API</div>
-          <div class="fg"><label>Access Token</label><input type="password" id="cfgToken" placeholder="EAAxxxxxxxx..."></div>
-          <div class="fg"><label>Phone Number ID</label><input type="text" id="cfgPhoneId" placeholder="1234567890123456" inputmode="numeric"></div>
-          <div class="fg"><label>Tu número de WhatsApp (con código país)</label><input type="tel" id="cfgNumero" placeholder="573001234567" inputmode="numeric"></div>
-          <div style="display:flex;gap:8px;margin-top:4px">
-            <button class="btn btn-wa btn-sm" style="flex:1" onclick="guardarCfg()">💾 Guardar</button>
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="testApi()">🧪 Probar</button>
-          </div>
-          <div class="cfg-result" id="cfgTestResult" style="display:none"></div>
-        </div>
-
-        <div class="cfg-section">
-          <div class="cfg-title">🌐 Estado de conexión</div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div class="cfg-section" style="border-bottom:none">
+          <div class="cfg-title">🤖 Bot Railway — Estado</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
             <div class="tb-dot" id="cfgDot" style="width:12px;height:12px"></div>
-            <div style="font-size:.84em;color:var(--text2)" id="cfgStatusTxt">No configurado</div>
+            <div style="font-size:.84em;color:var(--text2)" id="cfgStatusTxt">Verificando…</div>
           </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="btn btn-wa btn-sm" style="flex:1" onclick="fetchQRManual()">📲 Ver QR ahora</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="pingRailway()">🔍 Ping bot</button>
+          </div>
+          <div id="cfgTestResult" style="display:none;font-size:.8em;padding:10px;border-radius:var(--r);margin-bottom:10px"></div>
           <div style="font-size:.76em;color:var(--text3);line-height:1.6;background:rgba(0,0,0,.3);padding:10px;border-radius:var(--r)">
-            📌 <strong style="color:var(--text)">Cómo obtener el token:</strong><br>
-            1. Ve a <a href="https://developers.facebook.com" target="_blank" style="color:var(--wa)">developers.facebook.com</a><br>
-            2. Mi App → WhatsApp → Configuración de la API<br>
-            3. Copia el <em>Token de acceso temporal</em> o genera uno permanente<br>
-            4. Copia el <em>ID del número de teléfono</em>
+            📌 <strong style="color:var(--text)">Cómo vincular WhatsApp Business:</strong><br>
+            1. Asegúrate que el bot Railway esté corriendo<br>
+            2. Toca <em>"Ver QR ahora"</em> o espera que aparezca en ⚙️ arriba<br>
+            3. Abre WhatsApp Business → <em>Dispositivos vinculados</em><br>
+            4. Toca <em>"Vincular dispositivo"</em> y escanea el QR<br>
+            5. ¡Listo! El bot queda activo 24/7 🟢
           </div>
         </div>
 
@@ -875,12 +872,14 @@ function updateWAStatus(status) {
   const connMsg = document.getElementById('waConnectedMsg');
   const apiDot = document.getElementById('apiDot');
   const tbStatus = document.getElementById('tbStatus');
+  const cfgDot = document.getElementById('cfgDot');
+  const cfgStatusTxt = document.getElementById('cfgStatusTxt');
 
   const map = {
-    'connected':    { dot:'on', txt:'✅ Conectado', tb:'WA Conectado ✓' },
-    'qr':           { dot:'warn', txt:'📲 Esperando QR…', tb:'Escanea el QR' },
-    'connecting':   { dot:'warn', txt:'🔄 Conectando…', tb:'Conectando…' },
-    'disconnected': { dot:'', txt:'❌ Desconectado', tb:'Bot desconectado' }
+    'connected':    { dot:'on', txt:'✅ Conectado', tb:'WA Business ✓', cfg:'✅ WhatsApp Business conectado — Bot activo 24/7' },
+    'qr':           { dot:'warn', txt:'📲 Esperando QR…', tb:'Escanea el QR', cfg:'📲 Escanea el QR en WhatsApp Business → Dispositivos vinculados' },
+    'connecting':   { dot:'warn', txt:'🔄 Conectando…', tb:'Conectando…', cfg:'🔄 Conectando con WhatsApp Business…' },
+    'disconnected': { dot:'', txt:'❌ Desconectado', tb:'Bot desconectado', cfg:'⚠️ Bot desconectado — toca "Ver QR ahora" para reconectar' }
   };
   const m = map[status] || map['disconnected'];
 
@@ -888,6 +887,8 @@ function updateWAStatus(status) {
   if(txt) txt.textContent = m.txt;
   if(apiDot){ apiDot.className='tb-dot '+(m.dot); }
   if(tbStatus) tbStatus.textContent = m.tb;
+  if(cfgDot){ cfgDot.className='tb-dot '+(m.dot); }
+  if(cfgStatusTxt) cfgStatusTxt.textContent = m.cfg;
 
   if(qrSec && connMsg) {
     if(status === 'qr') {
@@ -905,12 +906,14 @@ function updateWAStatus(status) {
 
 function showQR(dataUrl) {
   const img = document.getElementById('qrImg');
-  if(img) { img.src = dataUrl; }
+  if(img) {
+    // Support both dataURL (from socket) and plain URL
+    img.src = dataUrl || (RAILWAY_URL+'/QR?t='+Date.now());
+  }
   updateWAStatus('qr');
-  // Auto-ir a cfg para mostrar QR si no está conectado
   const cfgSec = document.getElementById('s-cfg');
   if(cfgSec && !cfgSec.classList.contains('active')) {
-    snack('📲 QR listo — ve a Configuración para escanear','wa');
+    snack('📲 QR listo — ve a ⚙️ Configuración para escanear','wa');
   }
 }
 
@@ -1037,7 +1040,7 @@ function initAll(){
     if(d.mensaje&&msg)msg.value=d.mensaje;
   });
 
-  checkApiStatus();
+  checkWAStatus();
 }
 
 /* ── SORTEO ACTIVO ── */
@@ -1236,25 +1239,15 @@ async function enviarMsgChat(){
   const texto=(inp?inp.value:'').trim();
   if(!texto||!chatActualTel){snack('Sin mensaje o destinatario','err');return;}
   inp.value='';inp.style.height='';
-  const {token,phoneId}=getCfg();
   const numRaw=chatActualTel.replace(/\D/g,'');
   const numFinal=numRaw.startsWith('57')?numRaw:'57'+numRaw;
   const ts=Date.now();
   const msgId='admin_'+ts;
   await db.ref('wa_inbox/'+chatActualTel+'/mensajes/'+msgId).set({texto,de:'admin',ts,msgId});
   await db.ref('wa_inbox/'+chatActualTel).update({ultimoMensaje:texto,ultimoTs:ts,ultimoDe:'admin',nombre:chatActualNombre||chatActualTel});
-  if(token&&phoneId){
-    try{
-      const r=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify({messaging_product:'whatsapp',to:numFinal,type:'text',text:{body:texto}})
-      });
-      const d=await r.json();
-      if(!d.messages)snack('API: '+(d.error?.message||'error'),'err');
-    }catch(e){snack('Error de red','err');}
-  } else {
-    window.open(`https://wa.me/${numFinal}?text=${encodeURIComponent(texto)}`,'_blank');
-    snack('Sin API — abriendo WhatsApp web','wa');
+  const result=await sendViaRailway(numFinal,texto);
+  if(!result.ok){
+    snack('Bot desconectado — mensaje guardado en bandeja','err');
   }
 }
 
@@ -1512,8 +1505,6 @@ Responde SOLO con el mensaje.`;
 async function enviarCampana(){
   const msg=document.getElementById('msgEditor')?.value.trim();
   if(!msg){snack('Escribe un mensaje primero','err');return;}
-  const {token,phoneId}=getCfg();
-  if(!token||!phoneId){snack('Configura el token de Meta primero','err');goSec('cfg');return;}
   buildCRMData();
   const conTel=clientesDB.filter(c=>c.telefono&&c.telefono.length>6);
   const gt=c=>(c.telefono||'').replace(/\D/g,'');
@@ -1522,7 +1513,7 @@ async function enviarCampana(){
   else if(segActual==='frecuentes') dest=conTel.filter(c=>(_comprasPorTel[gt(c)]||0)>=3);
   else if(segActual==='nuevos') dest=conTel.filter(c=>!_comprasPorTel[gt(c)]&&!_pendientePorTel[gt(c)]);
   if(!dest.length){snack('Sin destinatarios en este segmento','err');return;}
-  if(!confirm(`¿Enviar a ${dest.length} cliente(s)?`))return;
+  if(!confirm(`¿Enviar a ${dest.length} cliente(s) via bot WhatsApp Business?`))return;
 
   const maxHora=parseInt(localStorage.getItem('wa_maxHora')||'15');
   const intervalo=parseInt(localStorage.getItem('wa_intervalo')||'5000');
@@ -1542,29 +1533,18 @@ async function enviarCampana(){
     progBar.style.width=pct+'%';
     progTxt.textContent=`Enviando a ${c.nombre||c.telefono}…`;
     progPct.textContent=pct+'%';
-    try{
-      const tel=(c.telefono||'').replace(/\D/g,'');
-      const numFinal=tel.startsWith('57')?tel:'57'+tel;
-      const res=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify({messaging_product:'whatsapp',to:numFinal,type:'text',text:{body:msg}})
-      });
-      const data=await res.json();
-      if(data.messages){
-        ok++;enviados++;
-        log.innerHTML+=`<div class="log-ok">✅ ${c.nombre||c.telefono} — enviado</div>`;
-        // Guardar en inbox
-        const ts=Date.now();
-        await db.ref('wa_inbox/'+numFinal).update({ultimoMensaje:msg.substring(0,60),ultimoTs:ts,ultimoDe:'admin',nombre:c.nombre||''});
-        await db.ref('wa_logs').push({tipo:'campana',destino:numFinal,ts,segmento:segActual,estado:'enviado'});
-      } else {
-        err++;
-        log.innerHTML+=`<div class="log-err">❌ ${c.nombre||c.telefono} — ${data.error?.message||'Error'}</div>`;
-      }
-    }catch(e){
+    const tel=(c.telefono||'').replace(/\D/g,'');
+    const numFinal=tel.startsWith('57')?tel:'57'+tel;
+    const result=await sendViaRailway(numFinal,msg);
+    if(result.ok){
+      ok++;enviados++;
+      log.innerHTML+=`<div class="log-ok">✅ ${c.nombre||c.telefono} — enviado</div>`;
+      const ts=Date.now();
+      await db.ref('wa_inbox/'+numFinal).update({ultimoMensaje:msg.substring(0,60),ultimoTs:ts,ultimoDe:'admin',nombre:c.nombre||''});
+      await db.ref('wa_logs').push({tipo:'campana',destino:numFinal,ts,segmento:segActual,estado:'enviado'});
+    } else {
       err++;
-      log.innerHTML+=`<div class="log-err">❌ ${c.nombre||c.telefono} — Error de red</div>`;
+      log.innerHTML+=`<div class="log-err">❌ ${c.nombre||c.telefono} — ${result.error||'Error'}</div>`;
     }
     log.scrollTop=log.scrollHeight;
     if(i<dest.length-1)await new Promise(r=>setTimeout(r,intervalo));
@@ -1578,27 +1558,18 @@ async function enviarMsgRapido(telefono,nombre,tipo){
   const s=sorteos[0];
   const url='https://bolsillolleno.github.io/SorteosBolsilloLleno/';
   const msg=TPLS[tipo]?TPLS[tipo](s,url):'Hola! Te contactamos de Bol$illo Lleno.';
-  const {token,phoneId}=getCfg();
-  if(!token||!phoneId){
-    const tel=(telefono||'').replace(/\D/g,'');
-    const numFinal=tel.startsWith('57')?tel:'57'+tel;
-    window.open(`https://wa.me/${numFinal}?text=${encodeURIComponent(msg)}`,'_blank');
-    return;
-  }
   const tel=(telefono||'').replace(/\D/g,'');
   const numFinal=tel.startsWith('57')?tel:'57'+tel;
-  try{
-    const r=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({messaging_product:'whatsapp',to:numFinal,type:'text',text:{body:msg}})
-    });
-    const d=await r.json();
-    if(d.messages){
-      snack(`📱 Mensaje enviado a ${nombre}`,'wa');
-      const ts=Date.now();
-      await db.ref('wa_inbox/'+numFinal).update({ultimoMensaje:msg.substring(0,60),ultimoTs:ts,ultimoDe:'admin',nombre:nombre||''});
-    } else snack('Error: '+(d.error?.message||'desconocido'),'err');
-  }catch(e){snack('Error de red','err');}
+  const result=await sendViaRailway(numFinal,msg);
+  if(result.ok){
+    snack(`📱 Mensaje enviado a ${nombre}`,'wa');
+    const ts=Date.now();
+    await db.ref('wa_inbox/'+numFinal).update({ultimoMensaje:msg.substring(0,60),ultimoTs:ts,ultimoDe:'admin',nombre:nombre||''});
+  } else {
+    // Fallback: abrir WhatsApp Web
+    window.open(`https://wa.me/${numFinal}?text=${encodeURIComponent(msg)}`,'_blank');
+    snack('Bot desconectado — abriendo WhatsApp','wa');
+  }
 }
 
 /* ════════════════════════════════════════
@@ -1712,39 +1683,14 @@ function guardarBizInfo(){
 }
 
 /* ════════════════════════════════════════
-   CONFIG
+   CONFIG — Railway / Baileys only
 ════════════════════════════════════════ */
-function getCfg(){
-  return{
-    token:localStorage.getItem('wa_token')||'',
-    phoneId:localStorage.getItem('wa_phoneId')||'',
-    numero:localStorage.getItem('wa_numero')||''
-  };
-}
-
 function cargarCfg(){
-  const{token,phoneId,numero}=getCfg();
-  const t=document.getElementById('cfgToken');
-  const p=document.getElementById('cfgPhoneId');
-  const n=document.getElementById('cfgNumero');
-  if(t)t.value=token;if(p)p.value=phoneId;if(n)n.value=numero;
   const maxHora=document.getElementById('cfgMaxHora');
   const intervalo=document.getElementById('cfgIntervalo');
   if(maxHora)maxHora.value=localStorage.getItem('wa_maxHora')||'15';
   if(intervalo)intervalo.value=localStorage.getItem('wa_intervalo')||'5000';
-  checkApiStatus();
-}
-
-function guardarCfg(){
-  const t=document.getElementById('cfgToken')?.value.trim();
-  const p=document.getElementById('cfgPhoneId')?.value.trim();
-  const n=document.getElementById('cfgNumero')?.value.trim();
-  if(!t||!p){snack('Completa Token y Phone ID','err');return;}
-  localStorage.setItem('wa_token',t);
-  localStorage.setItem('wa_phoneId',p);
-  if(n)localStorage.setItem('wa_numero',n);
-  checkApiStatus();
-  snack('Configuración guardada ✅');
+  checkWAStatus();
 }
 
 function guardarLimites(){
@@ -1755,35 +1701,79 @@ function guardarLimites(){
   snack('Límites guardados ✅');
 }
 
-function checkApiStatus(){
-  const{token,phoneId}=getCfg();
-  const dot=document.getElementById('apiDot');
-  const cfgDot=document.getElementById('cfgDot');
-  const tbStatus=document.getElementById('tbStatus');
-  const cfgStatus=document.getElementById('cfgStatusTxt');
-  const ok=!!(token&&phoneId);
-  if(dot){dot.classList.toggle('on',ok);dot.classList.toggle('warn',!ok);}
-  if(cfgDot){cfgDot.classList.toggle('on',ok);cfgDot.classList.toggle('warn',!ok);}
-  if(tbStatus)tbStatus.textContent=ok?'API Meta conectada':'Sin API — abre WhatsApp Web';
-  if(cfgStatus)cfgStatus.textContent=ok?'✅ API Meta WhatsApp configurada':'⚠️ Sin credenciales — se usará WhatsApp Web como fallback';
+function checkWAStatus(){
+  // driven by updateWAStatus via socket — just sync UI dots
+  const dot=document.getElementById('cfgDot');
+  const tbDot=document.getElementById('apiDot');
+  const connected=(document.getElementById('waConnectedMsg')?.style.display==='block');
+  [dot,tbDot].forEach(d=>{
+    if(!d)return;
+    d.classList.toggle('on',connected);
+    d.classList.toggle('warn',!connected);
+  });
 }
 
-async function testApi(){
-  const{token,phoneId,numero}=getCfg();
+async function pingRailway(){
   const res=document.getElementById('cfgTestResult');
   if(!res)return;
-  res.style.display='block';
-  if(!token||!phoneId||!numero){res.style.color='var(--red2)';res.textContent='⚠️ Completa token, Phone ID y número de prueba';return;}
-  res.style.color='var(--text3)';res.textContent='🔄 Enviando…';
+  res.style.display='block';res.style.color='var(--text3)';res.textContent='🔄 Probando conexión con Railway…';
   try{
-    const r=await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`,{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({messaging_product:'whatsapp',to:numero,type:'text',text:{body:'🧪 Prueba WA Panel — Bol$illo Lleno ✅'}})
+    const r=await fetch(RAILWAY_URL+'/status',{signal:AbortSignal.timeout(6000)});
+    if(r.ok){
+      const d=await r.json().catch(()=>({}));
+      const st=d.status||d.state||'ok';
+      res.style.color='var(--wa2)';
+      res.textContent='✅ Bot Railway activo — Estado: '+st;
+    } else {
+      res.style.color='var(--orange)';
+      res.textContent='⚠️ Bot respondió con código '+r.status;
+    }
+  }catch(e){
+    res.style.color='var(--red2)';
+    res.textContent='❌ No se pudo conectar con Railway: '+e.message;
+  }
+}
+
+async function fetchQRManual(){
+  try{
+    const img=document.getElementById('qrImg');
+    const qrSec=document.getElementById('qrSection');
+    if(img){
+      img.src=RAILWAY_URL+'/QR?t='+Date.now();
+      img.onload=()=>{
+        if(qrSec)qrSec.classList.add('show');
+        updateWAStatus('qr');
+        goSec('cfg');
+      };
+      img.onerror=()=>snack('QR no disponible — ¿Ya está conectado?','err');
+    }
+  }catch(e){snack('Error obteniendo QR','err');}
+}
+
+/* ── Envío de mensajes via Railway Bot (Baileys) ── */
+async function sendViaRailway(to, message){
+  // 1. Intentar vía Socket.io (si está conectado)
+  if(waSocket && waSocket.connected){
+    return new Promise((resolve)=>{
+      waSocket.emit('send-message',{to,message});
+      waSocket.once('message-sent',()=>resolve({ok:true}));
+      waSocket.once('message-error',(err)=>resolve({ok:false,error:err}));
+      setTimeout(()=>resolve({ok:true}),3000); // fallback timeout
     });
-    const d=await r.json();
-    if(d.messages){res.style.color='var(--wa2)';res.textContent='✅ Conexión exitosa! Revisa WhatsApp.';}
-    else{res.style.color='var(--red2)';res.textContent='❌ '+(d.error?.message||'Error desconocido');}
-  }catch(e){res.style.color='var(--red2)';res.textContent='❌ Error de red';}
+  }
+  // 2. Fallback HTTP POST
+  try{
+    const r=await fetch(RAILWAY_URL+'/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({to,message}),
+      signal:AbortSignal.timeout(10000)
+    });
+    const d=await r.json().catch(()=>({}));
+    return{ok:r.ok, error:d.error||null};
+  }catch(e){
+    return{ok:false,error:e.message};
+  }
 }
 
 /* ── INIT FINAL ── */
