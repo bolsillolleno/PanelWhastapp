@@ -11,6 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -48,29 +49,65 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:rgba(37,211,102,.2);border-radius:10px}
 
-/* ── LOGIN ── */
-#loginScreen{
-  position:fixed;inset:0;z-index:9999;background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
-  transition:opacity .4s,transform .4s;
-}
-#loginScreen.hidden{opacity:0;pointer-events:none;transform:scale(.96)}
-.lg-glow{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:320px;height:320px;background:radial-gradient(circle,rgba(37,211,102,.1) 0%,transparent 70%);pointer-events:none}
-.lg-icon{width:80px;height:80px;border-radius:22px;background:var(--grad-wa);display:flex;align-items:center;justify-content:center;font-size:2.2em;margin:0 auto 18px;box-shadow:0 20px 50px rgba(37,211,102,.3)}
-.lg-title{font-size:1.5em;font-weight:900;background:var(--grad-wa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;letter-spacing:-.02em}
-.lg-sub{font-size:.75em;color:var(--text3);text-align:center;margin-top:4px;font-weight:600;letter-spacing:.5px}
-.lg-card{width:100%;max-width:370px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl);padding:28px 22px;margin-top:28px;box-shadow:0 40px 80px rgba(0,0,0,.6)}
-.lf{margin-bottom:15px}
-.lf label{display:block;font-size:.7em;font-weight:800;color:var(--wa);margin-bottom:7px;letter-spacing:.8px;text-transform:uppercase}
-.lf input{width:100%;padding:14px 15px;background:rgba(0,0,0,.35);border:1.5px solid rgba(37,211,102,.2);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:.95em;outline:none;transition:border-color .2s;-webkit-appearance:none}
-.lf input:focus{border-color:var(--wa);box-shadow:0 0 0 3px rgba(37,211,102,.1)}
-.lf input::placeholder{color:var(--text3)}
-.btn-lg{width:100%;padding:15px;background:var(--grad-wa);border:none;border-radius:var(--rl);color:#022c16;font-weight:900;font-size:.95em;cursor:pointer;font-family:inherit;letter-spacing:.3px;box-shadow:0 8px 24px rgba(37,211,102,.35);transition:transform .15s,box-shadow .15s;margin-top:4px}
-.btn-lg:active{transform:scale(.97)}
-#lgErr{color:var(--red2);font-size:.8em;text-align:center;margin-top:12px;display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);padding:10px;border-radius:var(--r)}
-
 /* ── APP SHELL ── */
-#app{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);display:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+
+/* ── QR CARD ── */
+#qrSection{display:none;margin-bottom:12px}
+#qrSection.show{display:block}
+.qr-wrap{background:#fff;border-radius:16px;padding:16px;display:inline-block;margin:0 auto;display:flex;justify-content:center}
+.qr-wrap img{width:220px;height:220px;display:block}
+.qr-status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:.75em;font-weight:800;letter-spacing:.3px}
+.qr-status-badge.qr-waiting{background:rgba(37,211,102,.12);color:var(--wa2);border:1px solid rgba(37,211,102,.25)}
+.qr-status-badge.qr-connected{background:rgba(37,211,102,.15);color:var(--wa2);border:1px solid rgba(37,211,102,.3)}
+.qr-status-badge.qr-connecting{background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.25)}
+
+/* ── WA WEB INBOX ── */
+#s-bandeja{padding:0!important}
+.wa-inbox-wrap{display:flex;flex-direction:column;height:100%}
+.wa-search-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border2);flex-shrink:0}
+.wa-search-inp{flex:1;background:rgba(0,0,0,.3);border:none;outline:none;border-radius:20px;padding:8px 14px;color:var(--text);font-family:inherit;font-size:.85em}
+.wa-search-inp::placeholder{color:var(--text3)}
+.wa-chat-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.wa-item{display:flex;align-items:center;gap:0;padding:0 12px;cursor:pointer;position:relative;transition:background .15s;min-height:72px}
+.wa-item:active{background:rgba(255,255,255,.04)}
+.wa-item-ava{width:49px;height:49px;border-radius:50%;background:var(--grad-wa);display:flex;align-items:center;justify-content:center;font-size:1.3em;font-weight:800;color:#022c16;flex-shrink:0;margin-right:12px}
+.wa-item-body{flex:1;padding:12px 0;border-bottom:1px solid var(--border2);min-width:0;display:flex;flex-direction:column;gap:3px}
+.wa-item:last-child .wa-item-body{border-bottom:none}
+.wa-item-row1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wa-item-name{font-size:.93em;font-weight:600;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wa-item-time{font-size:.71em;color:var(--text3);flex-shrink:0}
+.wa-item-time.unread{color:var(--wa)}
+.wa-item-row2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wa-item-preview{font-size:.81em;color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.wa-item-preview .wa-check{color:#53bdeb;margin-right:2px;font-size:.85em}
+.wa-unread-badge{min-width:20px;height:20px;border-radius:10px;background:var(--wa);color:#fff;font-size:.66em;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0}
+
+/* ── WA WEB CHAT VIEW ── */
+#chatView{display:none;position:absolute;inset:0;flex-direction:column;z-index:200;background:#0b141a}
+#chatView.open{display:flex}
+.chat-topbar{flex-shrink:0;height:calc(58px + var(--safe-top));padding-top:var(--safe-top);background:#202c33;display:flex;align-items:flex-end;padding:0 8px 8px;gap:8px}
+.chat-back{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.4em;cursor:pointer;color:#aebac1;flex-shrink:0}
+.chat-ava{width:40px;height:40px;border-radius:50%;background:var(--grad-wa);display:flex;align-items:center;justify-content:center;font-size:1.1em;font-weight:800;color:#022c16;cursor:pointer;flex-shrink:0}
+.chat-info{flex:1;min-width:0}
+.chat-name{font-size:.95em;font-weight:600;color:#e9edef;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-last{font-size:.72em;color:#8696a0;margin-top:1px}
+.chat-actions{display:flex;gap:2px}
+.chat-msgs{flex:1;overflow-y:auto;padding:8px 4%;display:flex;flex-direction:column;gap:2px;-webkit-overflow-scrolling:touch;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%23111b21' width='400' height='400'/%3E%3C/svg%3E")}
+.msg{max-width:75%;padding:6px 10px 18px;border-radius:8px;font-size:.88em;line-height:1.5;position:relative;word-wrap:break-word;clear:both}
+.msg.in{background:#202c33;border-radius:0 8px 8px 8px;align-self:flex-start;color:#e9edef;margin-bottom:2px}
+.msg.out{background:#005c4b;border-radius:8px 0 8px 8px;align-self:flex-end;color:#e9edef;margin-bottom:2px}
+.msg.bot{background:#1a2a1a;border-radius:0 8px 8px 8px;align-self:flex-start;color:#a8e6b8;margin-bottom:2px;border-left:2px solid var(--wa)}
+.msg-time{position:absolute;bottom:3px;right:8px;font-size:.67em;color:rgba(255,255,255,.5);white-space:nowrap}
+.msg.out .msg-time{color:rgba(134,213,176,.7)}
+.wa-date-divider{text-align:center;margin:8px 0;font-size:.72em;color:#8696a0;background:rgba(17,27,33,.9);padding:4px 12px;border-radius:8px;align-self:center}
+.quick-btns{display:flex;gap:6px;padding:6px 12px;overflow-x:auto;background:#111b21;border-bottom:1px solid rgba(255,255,255,.05);-webkit-overflow-scrolling:touch;flex-shrink:0}
+.quick-btns::-webkit-scrollbar{display:none}
+.qb{padding:6px 13px;border-radius:20px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);color:var(--wa2);font-size:.72em;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;transition:background .15s}
+.chat-input-wrap{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:8px 12px calc(8px + var(--safe-bottom));background:#202c33}
+.chat-inp{flex:1;background:#2a3942;border:none;border-radius:20px;padding:10px 16px;color:#e9edef;font-family:inherit;font-size:.9em;outline:none;max-height:120px;overflow-y:auto;resize:none;line-height:1.5}
+.chat-inp::placeholder{color:#8696a0}
+.chat-send{width:44px;height:44px;border-radius:50%;background:var(--grad-wa);border:none;color:#022c16;font-size:1.15em;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(37,211,102,.35);transition:transform .15s}
 
 /* ── TOPBAR ── */
 #topbar{
@@ -353,22 +390,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
 </head>
 <body>
 
-<!-- ── LOGIN ── -->
-<div id="loginScreen">
-  <div class="lg-glow"></div>
-  <div style="text-align:center;margin-bottom:8px">
-    <div class="lg-icon">💬</div>
-    <div class="lg-title">WA Panel</div>
-    <div class="lg-sub">BOL$ILLO LLENO · WHATSAPP AUTOMATION</div>
-  </div>
-  <div class="lg-card">
-    <div class="lf"><label>Correo</label><input type="email" id="lgEmail" placeholder="admin@bolsillo.com" autocomplete="off"></div>
-    <div class="lf"><label>Contraseña</label><input type="password" id="lgPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn-lg" onclick="doLogin()">🔐 Entrar al Panel</button>
-    <div id="lgErr"></div>
-  </div>
-</div>
-
 <!-- ── APP ── -->
 <div id="app">
 
@@ -441,8 +462,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
 
     <!-- ══════════ BANDEJA ══════════ -->
     <div class="sec" id="s-bandeja">
-      <div class="sec-title">💬 Bandeja <span id="unreadCount"></span></div>
-      <div id="chatList"></div>
+      <div class="wa-inbox-wrap">
+        <!-- Header WA Web -->
+        <div class="wa-search-bar">
+          <input class="wa-search-inp" id="waSearchInp" placeholder="🔍  Buscar o empezar un chat" oninput="filterChats(this.value)">
+          <div class="tb-btn" onclick="renderChatList()" title="Actualizar" style="flex-shrink:0">↻</div>
+        </div>
+        <!-- Lista de chats -->
+        <div class="wa-chat-list" id="chatList"></div>
+      </div>
       <!-- CHAT VIEW (overlay) -->
       <div id="chatView">
         <div class="chat-topbar">
@@ -612,7 +640,37 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
     <div class="sec" id="s-cfg">
       <div class="sec-title">⚙️ Configuración</div>
 
-      <!-- Link al admin -->
+      <!-- ── WHATSAPP CONNECTION ── -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="cfg-section" style="border-bottom:none">
+          <div class="cfg-title">📱 WhatsApp — Baileys</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div class="tb-dot" id="waDot" style="width:13px;height:13px"></div>
+            <div style="font-size:.86em;font-weight:700;color:var(--text2)" id="waStatusTxt">Desconectado</div>
+            <div style="margin-left:auto;display:flex;gap:7px">
+              <button class="btn btn-ghost btn-sm" id="btnReconectarWA" onclick="reconectarWA()">🔄 Reconectar</button>
+              <button class="btn btn-red btn-sm" id="btnDesconectarWA" onclick="desconectarWA()">🔌 Desconectar</button>
+            </div>
+          </div>
+          <!-- QR Section -->
+          <div id="qrSection">
+            <div style="font-size:.8em;color:var(--text3);margin-bottom:10px;text-align:center">
+              📲 Abre WhatsApp → Dispositivos vinculados → Vincular dispositivo → Escanea este QR
+            </div>
+            <div class="qr-wrap">
+              <img id="qrImg" src="" alt="QR Code">
+            </div>
+            <div style="text-align:center;margin-top:10px">
+              <span class="qr-status-badge qr-waiting" id="qrBadge">⏳ Esperando escaneo…</span>
+            </div>
+          </div>
+          <div id="waConnectedMsg" style="display:none;text-align:center;padding:12px;background:rgba(37,211,102,.08);border-radius:var(--r);border:1px solid rgba(37,211,102,.2)">
+            <div style="font-size:1.6em">✅</div>
+            <div style="font-size:.85em;font-weight:800;color:var(--wa2);margin-top:4px">WhatsApp conectado</div>
+            <div style="font-size:.75em;color:var(--text3);margin-top:2px">El bot está activo y escuchando mensajes</div>
+          </div>
+        </div>
+      </div>
       <a class="admin-link" href="index.html">
         <span style="font-size:1.3em">🏠</span>
         <div style="flex:1"><div style="font-weight:800;font-size:.88em">Panel Admin</div><div style="font-size:.72em;color:var(--text3)">Volver al panel de sorteos y números</div></div>
@@ -773,29 +831,107 @@ let botActivo=false, botPersonalidad='amigo';
 let segActual='todos', crmTabActual='calientes';
 let snkT;
 
-/* ── LOGIN ── */
-function doLogin(){
-  const e=document.getElementById('lgEmail').value.trim();
-  const p=document.getElementById('lgPwd').value;
-  const err=document.getElementById('lgErr');
-  err.style.display='none';
-  if(!e||!p){err.textContent='Completa todos los campos';err.style.display='block';return;}
-  load(true);
-  firebase.auth().signInWithEmailAndPassword(e,p)
-    .then(()=>{load(false);launchApp();})
-    .catch(er=>{
-      load(false);
-      const m={'auth/wrong-password':'Contraseña incorrecta','auth/user-not-found':'Usuario no encontrado','auth/invalid-credential':'Credenciales incorrectas','auth/invalid-email':'Email inválido'};
-      err.textContent=m[er.code]||'Error de autenticación';err.style.display='block';
-    });
-}
-firebase.auth().onAuthStateChanged(u=>{if(u&&u.email===ADMIN)launchApp();});
+/* ════════════════════════════════════════
+   RAILWAY — Socket.io connection
+   Cambia esta URL por la de tu deploy en Railway
+════════════════════════════════════════ */
+const RAILWAY_URL = 'bolsillo-lleno-bot-production.up.railway.app'; // ← poner URL de Railway aquí
 
+let waSocket = null;
+
+function initSocketIO() {
+  try {
+    waSocket = io(RAILWAY_URL, { transports: ['websocket','polling'] });
+
+    waSocket.on('connect', () => {
+      console.log('✅ Socket conectado al servidor Railway');
+      updateWAStatus('connecting');
+    });
+
+    waSocket.on('connection-status', (status) => {
+      updateWAStatus(status);
+    });
+
+    waSocket.on('qr-code', (dataUrl) => {
+      showQR(dataUrl);
+    });
+
+    waSocket.on('stats-update', (stats) => {
+      if(state) state.stats = stats;
+    });
+
+    waSocket.on('disconnect', () => {
+      updateWAStatus('disconnected');
+    });
+  } catch(e) {
+    console.warn('Socket.io no disponible:', e.message);
+  }
+}
+
+function updateWAStatus(status) {
+  const dot = document.getElementById('waDot');
+  const txt = document.getElementById('waStatusTxt');
+  const qrSec = document.getElementById('qrSection');
+  const connMsg = document.getElementById('waConnectedMsg');
+  const apiDot = document.getElementById('apiDot');
+  const tbStatus = document.getElementById('tbStatus');
+
+  const map = {
+    'connected':    { dot:'on', txt:'✅ Conectado', tb:'WA Conectado ✓' },
+    'qr':           { dot:'warn', txt:'📲 Esperando QR…', tb:'Escanea el QR' },
+    'connecting':   { dot:'warn', txt:'🔄 Conectando…', tb:'Conectando…' },
+    'disconnected': { dot:'', txt:'❌ Desconectado', tb:'Bot desconectado' }
+  };
+  const m = map[status] || map['disconnected'];
+
+  if(dot){ dot.className='tb-dot '+(m.dot); }
+  if(txt) txt.textContent = m.txt;
+  if(apiDot){ apiDot.className='tb-dot '+(m.dot); }
+  if(tbStatus) tbStatus.textContent = m.tb;
+
+  if(qrSec && connMsg) {
+    if(status === 'qr') {
+      qrSec.classList.add('show');
+      connMsg.style.display='none';
+    } else if(status === 'connected') {
+      qrSec.classList.remove('show');
+      connMsg.style.display='block';
+    } else {
+      qrSec.classList.remove('show');
+      connMsg.style.display='none';
+    }
+  }
+}
+
+function showQR(dataUrl) {
+  const img = document.getElementById('qrImg');
+  if(img) { img.src = dataUrl; }
+  updateWAStatus('qr');
+  // Auto-ir a cfg para mostrar QR si no está conectado
+  const cfgSec = document.getElementById('s-cfg');
+  if(cfgSec && !cfgSec.classList.contains('active')) {
+    snack('📲 QR listo — ve a Configuración para escanear','wa');
+  }
+}
+
+function reconectarWA() {
+  if(waSocket) waSocket.emit('reconnect-wa');
+  snack('🔄 Solicitando reconexión…','wa');
+}
+
+function desconectarWA() {
+  if(waSocket) waSocket.emit('disconnect-wa');
+  snack('🔌 Desconectando…','err');
+}
+
+/* ── LAUNCH DIRECTO (sin login) ── */
 function launchApp(){
-  document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').style.display='flex';
   initAll();
+  initSocketIO();
 }
+firebase.auth().onAuthStateChanged(()=>{ launchApp(); });
+
 function confirmLogout(){openModal('mLogout')}
 function doLogout(){firebase.auth().signOut().then(()=>location.reload())}
 
@@ -991,32 +1127,66 @@ function renderRecentMsgs(data){
 }
 
 /* ════════════════════════════════════════
-   BANDEJA — Chat list
+   BANDEJA — Chat list (WA Web style)
 ════════════════════════════════════════ */
 let _inboxData={};
+let _searchFilter='';
+
 function renderChatListData(data){
   _inboxData=data;
   if(document.getElementById('s-bandeja').classList.contains('active'))renderChatList();
 }
 
+function filterChats(val){
+  _searchFilter=(val||'').toLowerCase();
+  renderChatList();
+}
+
 function renderChatList(){
   const el=document.getElementById('chatList');
   if(!el)return;
-  const chats=Object.entries(_inboxData).map(([tel,c])=>({tel,...c})).sort((a,b)=>(b.ultimoTs||0)-(a.ultimoTs||0));
-  if(!chats.length){el.innerHTML='<div class="empty"><div class="ei">💬</div><div class="et">No hay conversaciones aún</div></div>';return;}
+  let chats=Object.entries(_inboxData).map(([tel,c])=>({tel,...c})).sort((a,b)=>(b.ultimoTs||0)-(a.ultimoTs||0));
+  if(_searchFilter){
+    chats=chats.filter(c=>(c.nombre||c.tel||'').toLowerCase().includes(_searchFilter)||(c.ultimoMensaje||'').toLowerCase().includes(_searchFilter));
+  }
+  if(!chats.length){
+    el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px"><div style="font-size:3em;opacity:.3">💬</div><div style="color:var(--text3);font-size:.85em;font-weight:600">Sin conversaciones aún</div></div>';
+    return;
+  }
+  // Conteo de no leídos
+  const totalUnread=chats.filter(c=>c.sinLeer&&c.ultimoDe==='cliente').length;
+  const badge=document.getElementById('badgeBandeja');
+  if(badge){badge.style.display=totalUnread>0?'flex':'none';badge.textContent=totalUnread>9?'9+':totalUnread;}
+
   el.innerHTML=chats.map(c=>{
     const nom=c.nombre||c.tel||'Desconocido';
-    const hora=c.ultimoTs?new Date(c.ultimoTs).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'';
-    const isNew=c.ultimoDe==='cliente';
-    return`<div class="row${isNew?' unread':''}" onclick="abrirChat('${c.tel}','${nom.replace(/'/g,'&#39;')}')">
-      <div class="r-ava">${nom[0].toUpperCase()}</div>
-      <div class="r-body">
-        <div class="r-name">${nom}</div>
-        <div class="r-sub">${c.ultimoMensaje||'Sin mensajes'}</div>
-      </div>
-      <div class="r-right">
-        <div class="r-time">${hora}</div>
-        ${isNew?'<div style="width:10px;height:10px;border-radius:50%;background:var(--wa);flex-shrink:0"></div>':''}
+    const inicial=nom[0].toUpperCase();
+    const isUnread=c.sinLeer&&c.ultimoDe==='cliente';
+    const ts=c.ultimoTs;
+    let hora='';
+    if(ts){
+      const d=new Date(ts);
+      const now=new Date();
+      const isToday=d.toDateString()===now.toDateString();
+      const isYest=new Date(now-86400000).toDateString()===d.toDateString();
+      if(isToday) hora=d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      else if(isYest) hora='Ayer';
+      else hora=d.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'});
+    }
+    const preview=(c.ultimoMensaje||'Sin mensajes').substring(0,55);
+    const checkIcon=c.ultimoDe==='admin'?'<span class="wa-check">✓✓</span>':'';
+    const unreadCnt=isUnread?`<div class="wa-unread-badge">●</div>`:'';
+    return`<div class="wa-item" onclick="abrirChat('${c.tel}','${nom.replace(/'/g,'&#39;')}')">
+      <div class="wa-item-ava">${inicial}</div>
+      <div class="wa-item-body">
+        <div class="wa-item-row1">
+          <div class="wa-item-name">${nom}</div>
+          <div class="wa-item-time${isUnread?' unread':''}">${hora}</div>
+        </div>
+        <div class="wa-item-row2">
+          <div class="wa-item-preview">${checkIcon}${preview}</div>
+          ${unreadCnt}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1617,7 +1787,8 @@ async function testApi(){
 }
 
 /* ── INIT FINAL ── */
-document.getElementById('lgEmail').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+// launchApp se llama automáticamente via onAuthStateChanged
+
 </script>
 </body>
 </html>
