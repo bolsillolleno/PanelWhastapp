@@ -848,12 +848,12 @@ function openChat(jid, nombre, tipo) {
 
   document.getElementById('chatView').classList.add('open');
 
-  // Cargar historial de Firebase
-  db.ref('wa_inbox').orderByChild('jid').equalTo(jid).limitToLast(30).once('value', snap => {
+  // Cargar historial desde Firebase — usa el nodo 'mensajes' que crea firebaseServices.js
+  db.ref('mensajes').orderByChild('telefono').equalTo(jid.split('@')[0]).limitToLast(30).once('value', snap => {
     const msgs = [];
     snap.forEach(c => msgs.push(c.val()));
-    msgs.sort((a,b) => a.timestamp - b.timestamp);
-    msgs.forEach(m => appendMsg(m.text, m.fromMe ? 'out' : 'in', m.pushName, m.timestamp));
+    msgs.sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
+    msgs.forEach(m => appendMsg(m.contenido||m.text||'', m.tipo === 'outgoing' ? 'out' : 'in', m.pushName||m.telefono, m.timestamp));
     scrollMsgs();
   });
 }
@@ -985,10 +985,11 @@ function clearOutLog() {
 //  SORTEOS (Firebase)
 // ════════════════════════════════════════════════
 function loadSorteos() {
-  db.ref('sorteos').once('value', snap => {
+  const ahora = new Date().toISOString();
+  db.ref('sorteos').once('value', async snap => {
     const data = snap.val() || {};
     const list = Object.entries(data).map(([id,s]) => ({id,...s}))
-      .filter(s => s.status !== 'cerrado')
+      .filter(s => s.status !== 'cerrado' && s.date > ahora)
       .sort((a,b) => new Date(a.date) - new Date(b.date));
 
     document.getElementById('sorteoCount').textContent = list.length + ' activos';
@@ -997,28 +998,33 @@ function loadSorteos() {
       el.innerHTML = '<div class="empty"><div class="ei">🎰</div><div class="et">Sin sorteos activos</div></div>';
       return;
     }
-    el.innerHTML = list.map(s => {
-      const numeros   = s.numeros || {};
-      const ocupados  = typeof numeros === 'object'
-        ? Object.values(numeros).filter(v => v && (v.ocupado || v.nombre)).length
-        : 0;
-      const libres    = 100 - ocupados;
-      const pct       = ocupados;
+
+    // Cargar occupied + pending para cada sorteo
+    const cards = await Promise.all(list.map(async s => {
+      const [occSnap, pendSnap] = await Promise.all([
+        db.ref('occupied/' + s.id).once('value'),
+        db.ref('pending/'  + s.id).once('value')
+      ]);
+      const ocupados  = Object.keys(occSnap.val()  || {}).length;
+      const pendientes= Object.keys(pendSnap.val() || {}).length;
+      const vendidos  = ocupados + pendientes;
+      const libres    = 100 - vendidos;
       return `<div class="sorteo-card">
         <div class="sorteo-nombre">🎰 ${esc(s.name||s.nombre||'Sorteo')}</div>
         <div class="sorteo-meta">
           💰 Premio: <strong>$${parseInt(s.premioMayor||0).toLocaleString('es-CO')}</strong><br>
           🎫 Precio: <strong>$${parseInt(s.precioNumero||0).toLocaleString('es-CO')}</strong><br>
           📅 Cierra: <strong>${s.date ? new Date(s.date).toLocaleString('es-CO') : '—'}</strong><br>
-          📊 <strong>${ocupados}/100</strong> números vendidos · <strong>${libres} disponibles</strong>
+          ✅ Pagados: <strong>${ocupados}</strong> · ⏳ Pendientes: <strong>${pendientes}</strong> · 🟢 Libres: <strong>${libres}</strong>
         </div>
-        <div class="prog-wrap"><div class="prog-bar gold" style="width:${pct}%"></div></div>
+        <div class="prog-wrap"><div class="prog-bar gold" style="width:${vendidos}%"></div></div>
         <div style="display:flex;gap:7px;margin-top:10px">
           <button class="btn btn-ghost btn-sm" onclick="verNumeros('${s.id}')">Ver números</button>
           <button class="btn btn-red btn-sm" onclick="cerrarSorteo('${s.id}')">Cerrar</button>
         </div>
       </div>`;
-    }).join('');
+    }));
+    el.innerHTML = cards.join('');
   });
 }
 
@@ -1075,7 +1081,8 @@ let crmData = [];
 let crmFilter = 'todos';
 
 function loadCRM() {
-  db.ref('clientes').once('value', snap => {
+  // ✅ Ruta correcta: clientesDB (igual que firebaseServices.js)
+  db.ref('clientesDB').once('value', snap => {
     const data = snap.val() || {};
     crmData = Object.entries(data).map(([id,c]) => ({id,...c}));
     document.getElementById('crmCount').textContent = crmData.length + ' registros';
@@ -1192,11 +1199,12 @@ document.addEventListener('DOMContentLoaded', () => {
     goSec('cfg');
   }
 
-  // Firebase: escucha mensajes entrantes en bandeja
-  db.ref('wa_inbox').limitToLast(1).on('child_added', snap => {
+  // Firebase: escucha mensajes entrantes — usa 'mensajes' como nodo genérico
+  // (wa_inbox se crea automáticamente cuando el bot guarda mensajes)
+  db.ref('mensajes').limitToLast(1).on('child_added', snap => {
     const m = snap.val();
-    if (!m) return;
-    log(`📩 ${m.pushName}: ${(m.text||'').substring(0,40)}`, 'info');
+    if (!m || m.tipo !== 'incoming') return;
+    log(`📩 ${m.pushName||m.telefono}: ${(m.contenido||'').substring(0,40)}`, 'info');
   });
 });
 </script>
