@@ -377,7 +377,21 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Plus Jak
       <div class="msg-preview" id="msgPreview"><span style="color:var(--text3);font-size:.9em">Tu mensaje aparecerá aquí…</span></div>
       <div class="div"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:.84em;color:var(--text2);font-weight:700">Destinatarios: <span id="destCount" style="color:var(--wa2);font-weight:900">0</span></div>
+      <div class="card-hdr" style="margin-bottom:8px">👥 Grupos de WhatsApp</div>
+      <div style="display:flex;gap:7px;margin-bottom:8px">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="loadGruposWA()">🔄 Cargar grupos</button>
+      </div>
+      <div id="gruposWAList" style="margin-bottom:14px">
+        <div style="color:var(--text3);font-size:.8em;padding:10px;background:rgba(0,0,0,.2);border-radius:var(--r)">Toca "Cargar grupos" para ver los grupos donde eres admin</div>
+      </div>
+      <div id="contactosGrupoWrap" style="display:none;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-sm" onclick="cerrarContactosGrupo()">← Volver</button>
+          <div style="font-size:.84em;font-weight:700;color:var(--text2)" id="contactosGrupoNombre"></div>
+        </div>
+        <div id="contactosGrupoList"></div>
+      </div>
+      <div style="font-size:.84em;color:var(--text2);font-weight:700">Destinatarios: <span id="destCount" style="color:var(--wa2);font-weight:900">0</span></div>
         <div class="badge bg-wa" id="destBadge">todos</div>
       </div>
       <button class="btn btn-wa btn-full" id="btnEnviar" onclick="enviarCampana()">📤 Enviar campaña</button>
@@ -560,10 +574,11 @@ function initSocketIO(){
     waSocket.on('connection-status',(status)=>{ updateWAStatus(status); });
     waSocket.on('qr-code',(dataUrl)=>{ showQR(dataUrl); });
     waSocket.on('bot-status',(active)=>{ botActivo=active; updateBotUI(); });
-    // ✅ FIX #13 — 'state' no existe en el browser, actualizar DOM directamente
+    // ✅ FIX — actualizar contadores recibidos y enviados
     waSocket.on('stats-update',(stats)=>{
       if(stats){
-        const r=document.getElementById('stMsgs'); if(r&&stats.received) r.textContent=stats.received;
+        const r=document.getElementById('stMsgs'); if(r&&stats.received!=null) r.textContent=stats.received;
+        const s=document.getElementById('stSent'); if(s&&stats.sent!=null) s.textContent=stats.sent;
       }
     });
     // ✅ NUEVO — sincronizar personalidad desde el servidor
@@ -575,6 +590,7 @@ function initSocketIO(){
     });
     waSocket.on('chats-update',(chats)=>{ /* actualizar bandeja si se necesita */ });
     waSocket.on('disconnect',()=>{ updateWAStatus('disconnected'); });
+    setupGruposSocket(); // ✅ FIX Bug 3 — registrar listener de grupos
   }catch(e){ console.warn('Socket.io no disponible:',e.message); }
 }
 
@@ -1219,6 +1235,88 @@ async function fetchQRManual(){
   }catch(e){snack('❌ Error: '+e.message,'err');}
 }
 function checkWAStatus(){pingRailway().catch(()=>{});}
+
+/* ── GRUPOS WA ── */
+function loadGruposWA(){
+  if(!waSocket||!waSocket.connected){snack('⚠️ Bot no conectado al panel','err');return;}
+  const el=document.getElementById('gruposWAList');
+  if(el){el.innerHTML='<div style="color:var(--text3);font-size:.8em;padding:10px">⏳ Cargando grupos…</div>';}
+  waSocket.emit('get-admin-groups');
+}
+
+function loadContactosGrupo(jid,nombre){
+  // Solicitar de nuevo con participantes
+  if(!waSocket||!waSocket.connected){snack('⚠️ Bot no conectado','err');return;}
+  document.getElementById('gruposWAList').style.display='none';
+  const wrap=document.getElementById('contactosGrupoWrap');
+  const lista=document.getElementById('contactosGrupoList');
+  const titulo=document.getElementById('contactosGrupoNombre');
+  if(wrap){wrap.style.display='block';}
+  if(titulo){titulo.textContent=nombre;}
+  if(lista){lista.innerHTML='<div style="color:var(--text3);font-size:.8em;padding:10px">⏳ Cargando contactos…</div>';}
+  // Guardar jid activo para reusar los datos ya recibidos
+  window._grupoActivo={jid,nombre};
+  if(window._gruposData){
+    const g=window._gruposData.find(x=>x.jid===jid);
+    if(g&&g.participants){renderContactosGrupo(g.participants);return;}
+  }
+  snack('Recarga los grupos primero','err');
+}
+
+function cerrarContactosGrupo(){
+  document.getElementById('gruposWAList').style.display='block';
+  document.getElementById('contactosGrupoWrap').style.display='none';
+}
+
+function renderContactosGrupo(participants){
+  const lista=document.getElementById('contactosGrupoList');
+  if(!lista)return;
+  if(!participants||!participants.length){
+    lista.innerHTML='<div style="color:var(--text3);font-size:.8em;padding:10px">Sin participantes</div>';return;
+  }
+  lista.innerHTML=participants.map(p=>{
+    const phone=p.id.split('@')[0].split(':')[0];
+    const isAdmin=p.admin?'👑 ':'';
+    return `<div class="row" style="cursor:default">
+      <div style="font-size:1.1em">👤</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:.85em;font-family:'JetBrains Mono',monospace">${isAdmin}+${phone}</div>
+        ${p.admin?'<div style="font-size:.7em;color:var(--gold2)">Admin</div>':''}
+      </div>
+      <button class="btn btn-ghost btn-sm" style="font-size:.7em;padding:5px 9px" onclick="enviarMsgDirecto('+${phone}')">💬</button>
+    </div>`;
+  }).join('');
+}
+
+function enviarMsgDirecto(phone){
+  goSec('bandeja');
+  snack('Abre un chat nuevo con '+phone,'wa');
+}
+
+// Escuchar respuesta de grupos desde el bot
+function setupGruposSocket(){
+  if(!waSocket)return;
+  waSocket.off('admin-groups'); // evitar duplicados
+  waSocket.on('admin-groups',function(groups){
+    window._gruposData=groups; // cache local
+    const el=document.getElementById('gruposWAList');
+    if(!el)return;
+    if(!groups||!groups.length){
+      el.innerHTML='<div style="color:var(--text3);font-size:.8em;padding:10px;background:rgba(0,0,0,.2);border-radius:var(--r)">⚠️ No eres admin en ningún grupo</div>';
+      return;
+    }
+    el.innerHTML=groups.map(g=>`
+      <div class="row" onclick="loadContactosGrupo('${g.jid}','${g.name.replace(/'/g,'')}')">
+        <div style="font-size:1.4em">👥</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.88em">${g.name}</div>
+          <div style="font-size:.72em;color:var(--text3)">${g.members} miembros</div>
+        </div>
+        <span style="color:var(--text3)">›</span>
+      </div>`).join('');
+    snack('✅ '+groups.length+' grupo(s) cargado(s)','wa');
+  });
+}
 </script>
 </body>
 </html>
