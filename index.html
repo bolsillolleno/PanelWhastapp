@@ -1,1186 +1,1331 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bingo Bol$illo Lleno 🎱</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bolsillo Lleno – Bingo Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  query, orderBy, where, onSnapshot, serverTimestamp, getDoc }
+  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+import { getDatabase, ref, onValue, set, update }
+  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+// ── Firebase config ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyA2_BKI_kA3QdmXFEV08Pd3Vu2yWgJ15hU",
+  authDomain: "bolsillolleno-5d1f8.firebaseapp.com",
+  databaseURL: "https://bolsillolleno-5d1f8-default-rtdb.firebaseio.com",
+  projectId: "bolsillolleno-5d1f8",
+  storageBucket: "bolsillolleno-5d1f8.firebasestorage.app",
+  messagingSenderId: "589773139731",
+  appId: "1:589773139731:web:ab6495056a3697b752f4e6"
+};
+const ADMIN_UID = 'QpdUwY7avJf8WhZ9N7ZIdd4ZUZA3';
 
-  <!-- React & ReactDOM CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const rtdb = getDatabase(app);
 
-  <!-- Babel for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+// ── Bingo engine ─────────────────────────────────────────────
+const COLUMN_RANGES = {
+  B:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+  I:[16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],
+  N:[31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],
+  G:[46,47,48,49,50,51,52,53,54,55,56,57,58,59,60],
+  O:[61,62,63,64,65,66,67,68,69,70,71,72,73,74,75],
+};
+const LETTERS = ['B','I','N','G','O'];
+const used = new Set();
 
-  <!-- Firebase SDK v10 CDN -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    window.__firebaseModules = { initializeApp, getFirestore };
-  </script>
-
-  <style>
-    :root {
-      --gold: #F5C518;
-      --gold-dark: #C9A000;
-      --gold-light: #FFE57A;
-      --emerald: #10583D;
-      --emerald-mid: #1A7A55;
-      --emerald-light: #22A870;
-      --cream: #FFF9EE;
-      --dark: #0A1F14;
+function getBallLetter(n){
+  if(n<=15)return'B'; if(n<=30)return'I'; if(n<=45)return'N';
+  if(n<=60)return'G'; return'O';
+}
+function getBallColor(n){
+  if(n<=15)return'#3b82f6'; if(n<=30)return'#ef4444';
+  if(n<=45)return'#9ca3af'; if(n<=60)return'#22c55e'; return'#eab308';
+}
+function generateCard(){
+  let attempts=0;
+  while(attempts++<500){
+    const card=[];
+    const usedNums=new Set();
+    let ok=true;
+    for(let c=0;c<5;c++){
+      const range=COLUMN_RANGES[LETTERS[c]];
+      const col=[];
+      for(let r=0;r<5;r++){
+        if(r===2&&c===2){col.push(null);continue;}
+        const avail=range.filter(x=>!usedNums.has(x));
+        if(!avail.length){ok=false;break;}
+        const n=avail[Math.floor(Math.random()*avail.length)];
+        usedNums.add(n); col.push(n);
+      }
+      if(!ok)break;
+      card.push(col);
     }
+    if(!ok)continue;
+    const fp=card.flat().filter(x=>x!==null).sort((a,b)=>a-b).join(',');
+    if(used.has(fp))continue;
+    used.add(fp);
+    return card;
+  }
+  return null;
+}
+function generateSheet(drawId,count,purchaseId){
+  const cards=[];
+  for(let i=0;i<count;i++){
+    cards.push({id:`card_${Date.now()}_${i}`,numbers:generateCard(),sheetId:'',purchaseId});
+  }
+  return{id:`sheet_${Date.now()}`,drawId,cards,purchaseId,createdAt:Date.now()};
+}
+function generateSheets(drawId,n,count,purchaseId){
+  const sheets=[];
+  for(let i=0;i<n;i++) sheets.push(generateSheet(drawId,count,purchaseId));
+  return sheets;
+}
+function drawRandomBall(drawn){
+  const rem=Array.from({length:75},(_,i)=>i+1).filter(b=>!drawn.includes(b));
+  if(!rem.length)throw new Error('Todas las balotas sorteadas');
+  return rem[Math.floor(Math.random()*rem.length)];
+}
+function checkWin(card,drawn,type){
+  const s=new Set(drawn);
+  function marked(col,row){const v=card[col][row]; return v===null||s.has(v);}
+  function check(cells){return cells.every(([c,r])=>marked(c,r));}
+  const all=[
+    [[0,0],[1,0],[2,0],[3,0],[4,0]],
+    [[0,1],[1,1],[2,1],[3,1],[4,1]],
+    [[0,2],[1,2],[2,2],[3,2],[4,2]],
+    [[0,3],[1,3],[2,3],[3,3],[4,3]],
+    [[0,4],[1,4],[2,4],[3,4],[4,4]],
+  ];
+  const allV=[
+    [[0,0],[0,1],[0,2],[0,3],[0,4]],
+    [[1,0],[1,1],[1,2],[1,3],[1,4]],
+    [[2,0],[2,1],[2,2],[2,3],[2,4]],
+    [[3,0],[3,1],[3,2],[3,3],[3,4]],
+    [[4,0],[4,1],[4,2],[4,3],[4,4]],
+  ];
+  switch(type){
+    case'horizontal_line': return all.some(r=>check(r));
+    case'vertical_line':   return allV.some(c=>check(c));
+    case'diagonal':
+      return check([[0,0],[1,1],[2,2],[3,3],[4,4]])||check([[4,0],[3,1],[2,2],[1,3],[0,4]]);
+    case'four_corners':
+      return check([[0,0],[4,0],[0,4],[4,4]]);
+    case'cross':
+      return check([[2,0],[2,1],[2,2],[2,3],[2,4],[0,2],[1,2],[3,2],[4,2]]);
+    case'full_card':
+      for(let c=0;c<5;c++) for(let r=0;r<5;r++) if(!marked(c,r))return false;
+      return true;
+    default: return false;
+  }
+}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+// ── App State ────────────────────────────────────────────────
+const S={
+  page:'home', user:null, isAdmin:false,
+  draws:[], purchases:[], patterns:[], winners:[],
+  gameState:{currentDrawId:null,status:'waiting',currentBall:null,drawnBalls:[],ballSpeed:5,isAutoDraw:false},
+  settings:{whatsappNumber:'573001234567',bankAccount:'',bankName:'',accountHolder:'',pricePerSheet:4000,cardsPerSheet:6},
+  sheets:[], currentDraw:null,
+  accessId:'', isAuthenticated:false,
+  adminTab:'dashboard',
+  checkoutDraw:null, checkoutSheets:1,
+  unsubscribers:[],
+};
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--dark);
-      color: white;
-      min-height: 100vh;
-      overflow-x: hidden;
+// ── Firebase helpers ─────────────────────────────────────────
+function listen(q, cb){ const u=onSnapshot(q,cb); S.unsubscribers.push(u); return u; }
+
+function initListeners(){
+  listen(query(collection(db,'draws'),orderBy('createdAt','desc')), snap=>{
+    S.draws=snap.docs.map(d=>({id:d.id,...d.data()})); render();
+  });
+  listen(query(collection(db,'purchases'),orderBy('createdAt','desc')), snap=>{
+    S.purchases=snap.docs.map(d=>({id:d.id,...d.data()})); render();
+  });
+  listen(query(collection(db,'patterns')), snap=>{
+    S.patterns=snap.docs.map(d=>({id:d.id,...d.data()})); render();
+  });
+  listen(query(collection(db,'winners'),orderBy('createdAt','desc')), snap=>{
+    S.winners=snap.docs.map(d=>({id:d.id,...d.data()})); render();
+  });
+  const gsRef=ref(rtdb,'gameState');
+  const u=onValue(gsRef, snap=>{
+    if(snap.exists()) S.gameState={...S.gameState,...snap.val()};
+    if(S.gameState.currentDrawId){
+      const d=S.draws.find(x=>x.id===S.gameState.currentDrawId)||null;
+      S.currentDraw=d;
+    } else S.currentDraw=null;
+    render();
+  });
+  S.unsubscribers.push(()=>u());
+
+  const settRef=ref(rtdb,'settings');
+  onValue(settRef, snap=>{ if(snap.exists()) S.settings={...S.settings,...snap.val()}; render(); });
+}
+
+async function fbUpdateGameState(updates){
+  await update(ref(rtdb,'gameState'),updates);
+}
+
+// ── Auth ─────────────────────────────────────────────────────
+onAuthStateChanged(auth, u=>{
+  S.user=u; S.isAdmin=u?.uid===ADMIN_UID; render();
+});
+
+// ── Navigation ───────────────────────────────────────────────
+function nav(page, params={}){
+  S.page=page;
+  if(params.draw) S.checkoutDraw=params.draw;
+  if(params.sheets) S.checkoutSheets=params.sheets||1;
+  window.scrollTo(0,0);
+  render();
+}
+
+// ── Render engine ─────────────────────────────────────────────
+function render(){
+  const root=document.getElementById('app');
+  root.innerHTML=`
+    ${renderNav()}
+    <main class="main">${renderPage()}</main>
+    ${renderFooter()}
+  `;
+  bindEvents();
+}
+
+// ── NAVBAR ────────────────────────────────────────────────────
+function renderNav(){
+  const links=[
+    {id:'home',label:'Inicio'},
+    {id:'sala',label:'Sala'},
+    {id:'comprar',label:'Comprar'},
+    {id:'play',label:'Jugar'},
+  ];
+  return`<nav class="navbar">
+    <div class="nav-inner">
+      <button class="logo-btn" data-nav="home">
+        <span class="logo-text">🎱 BOLSILLO LLENO</span>
+      </button>
+      <div class="nav-links">
+        ${links.map(l=>`<button class="nav-link ${S.page===l.id?'active':''}" data-nav="${l.id}">${l.label}</button>`).join('')}
+        ${S.isAdmin?`<button class="nav-link ${S.page==='admin'?'active':''}" data-nav="admin">Admin</button>`:''}
+        ${S.user
+          ? `<button class="nav-link" id="btn-logout">Salir</button>`
+          : `<button class="nav-link" data-nav="login">Admin</button>`}
+      </div>
+    </div>
+  </nav>`;
+}
+
+// ── PAGES ─────────────────────────────────────────────────────
+function renderPage(){
+  switch(S.page){
+    case'home':    return renderHome();
+    case'sala':    return renderSala();
+    case'comprar': return renderComprar();
+    case'checkout':return renderCheckout();
+    case'play':    return renderPlay();
+    case'login':   return renderLogin();
+    case'admin':   return S.isAdmin?renderAdmin():'<p class="center-msg">No autorizado</p>';
+    default:       return renderHome();
+  }
+}
+
+// ── HOME ──────────────────────────────────────────────────────
+function renderHome(){
+  const patterns=[
+    {name:'Línea',prize:'$100.000',cells:[[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
+    {name:'Diagonal',prize:'$100.000',cells:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]},
+    {name:'4 Esquinas',prize:'$200.000',cells:[[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]]},
+    {name:'Cruz',prize:'$300.000',cells:[[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]]},
+    {name:'Cartón Lleno',prize:'$1.000.000',cells:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]},
+  ];
+  const steps=[
+    {n:'01',icon:'🛒',title:'Compra tus Hojas',desc:'Elige la cantidad de hojas. Cada hoja incluye múltiples cartones de bingo.'},
+    {n:'02',icon:'💸',title:'Realiza el Pago',desc:'Transfiere y envía el comprobante por WhatsApp para validación rápida.'},
+    {n:'03',icon:'📺',title:'Conéctate al Vivo',desc:'Ingresa con tu ID de acceso único y sigue el sorteo en tiempo real.'},
+    {n:'04',icon:'🏆',title:'Gana Premios!',desc:'Los cartones se marcan automáticamente. El sistema detecta ganadores al instante.'},
+  ];
+  return`
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">🎱 Bingo Online en Vivo</div>
+      <h1 class="hero-title">La emoción de<br><span class="gold">ganar en grande</span><br><span class="dim">desde casa</span></h1>
+      <p class="hero-sub">Cada sorteo es único. Compra tus hojas, conéctate a la transmisión en vivo y reclama tus premios al instante.</p>
+      <div class="hero-btns">
+        <button class="btn-gold btn-lg" data-nav="comprar">🛒 Comprar Cartones</button>
+        <button class="btn-outline btn-lg" data-nav="sala">▶ Ver Sala</button>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-n gold">75</div><div class="hstat-l">Balotas</div></div>
+        <div class="hstat-sep"></div>
+        <div class="hstat"><div class="hstat-n gold">$1M</div><div class="hstat-l">Premio Mayor</div></div>
+        <div class="hstat-sep"></div>
+        <div class="hstat"><div class="hstat-n gold">24/7</div><div class="hstat-l">Sorteos</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title"><h2 class="gold">¿Cómo Funciona?</h2><p>4 pasos para empezar a ganar</p></div>
+    <div class="grid4">
+      ${steps.map(s=>`<div class="card glass">
+        <div class="step-icon">${s.icon}</div>
+        <div class="step-num">${s.n}</div>
+        <h3>${s.title}</h3>
+        <p class="gray">${s.desc}</p>
+      </div>`).join('')}
+    </div>
+  </section>
+
+  <section class="section border-top">
+    <div class="section-title"><h2 class="gold">Patrones Ganadores</h2><p>Múltiples formas de ganar en cada sorteo</p></div>
+    <div class="grid5">
+      ${patterns.map(p=>`<div class="card glass pcard">
+        <div class="pcardh">
+          <span class="pname">${p.name}</span>
+          <span class="gold fw-bold">${p.prize}</span>
+        </div>
+        <div class="mini-board">
+          ${p.cells.flat().map(c=>`<div class="mini-cell ${c?'on':''}"></div>`).join('')}
+        </div>
+      </div>`).join('')}
+    </div>
+  </section>
+
+  <section class="section border-top">
+    <div class="section-title">
+      <h2 class="gold">🏆 Nuestros Ganadores</h2>
+      <p>Ellos ya vivieron la emoción. ¡El próximo puedes ser tú!</p>
+    </div>
+    <div class="grid3">
+      ${S.winners.slice(0,3).map(w=>`<div class="card glass text-center">
+        <div class="winner-icon">🏆</div>
+        <div class="fw-bold white">${w.customerName||'Ganador'}</div>
+        <div class="gold fw-bold fs-xl">${w.prize?'$'+w.prize.toLocaleString('es-CO'):''}</div>
+        <div class="gray small">${w.patternName||''}</div>
+      </div>`).join('')}
+      ${S.winners.length===0?`
+        <div class="card glass text-center"><div style="font-size:3rem">🎉</div><div class="gray">¡Sé el primer ganador!</div></div>
+        <div class="card glass text-center"><div style="font-size:3rem">💰</div><div class="gray">Grandes premios esperan</div></div>
+        <div class="card glass text-center"><div style="font-size:3rem">⭐</div><div class="gray">Tu suerte llega hoy</div></div>
+      `:''}
+    </div>
+  </section>
+
+  <section class="section cta-section">
+    <h2 class="gold fs-2xl">¿Listo para llenar tu bolsillo?</h2>
+    <p class="gray">No esperes más. Únete al próximo sorteo en vivo.</p>
+    <button class="btn-gold btn-xl" data-nav="comprar">🛒 Comprar Ahora →</button>
+  </section>`;
+}
+
+// ── SALA ──────────────────────────────────────────────────────
+function renderSala(){
+  const live=S.draws.find(d=>d.status==='live');
+  const upcoming=S.draws.filter(d=>d.status==='scheduled'||d.status==='live')
+    .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+  const display=live||upcoming[0];
+
+  return`<div class="page-wrap">
+    <div class="section-title"><h1 class="gold">Sala de Juego</h1><p class="gray">Compra tus hojas y sigue los sorteos en vivo</p></div>
+
+    ${display?`<div class="card glass draw-display">
+      <div class="draw-info">
+        ${live
+          ? `<span class="badge red">🔴 EN VIVO</span>`
+          : `<span class="badge yellow">🕐 PRÓXIMO SORTEO</span>`}
+        <h2 class="white">${display.name}</h2>
+        ${display.description?`<p class="gray">${display.description}</p>`:''}
+        <div class="draw-meta">
+          <span>📅 ${display.date}</span>
+          <span>🕐 ${display.time}</span>
+          <span class="gold">💵 $${(display.pricePerSheet||4000).toLocaleString('es-CO')}/hoja</span>
+        </div>
+        <div class="draw-btns">
+          <button class="btn-gold" data-nav="comprar" data-draw="${display.id}">🛒 Comprar Hojas</button>
+          <button class="btn-outline" data-nav="play">▶ Jugar</button>
+        </div>
+      </div>
+      ${live&&S.gameState.currentBall?`
+      <div class="draw-ball-side">
+        <p class="gray small">BALOTA ACTUAL</p>
+        <div class="big-ball" style="background:${getBallColor(S.gameState.currentBall)}">
+          <span class="ball-letter">${getBallLetter(S.gameState.currentBall)}</span>
+          <span class="ball-num">${S.gameState.currentBall}</span>
+        </div>
+        <p class="gray small">${S.gameState.drawnBalls.length} de 75</p>
+      </div>`:``}
+    </div>`:`<div class="card glass text-center"><p class="gray fs-lg">No hay sorteos programados actualmente.</p><button class="btn-gold mt-1" data-nav="home">Volver al inicio</button></div>`}
+
+    ${upcoming.length>0?`
+    <div>
+      <h3 class="white mb-1">Próximos Sorteos</h3>
+      <div class="draw-list">
+        ${upcoming.map(d=>`<div class="card glass draw-item">
+          <div>
+            <div class="fw-bold white">${d.name}</div>
+            <div class="gray small">${d.date} – ${d.time} · ${d.cardsPerSheet||6} cartones/hoja</div>
+          </div>
+          <div class="draw-item-right">
+            <span class="gold fw-bold">$${(d.pricePerSheet||4000).toLocaleString('es-CO')}</span>
+            <button class="btn-gold sm" data-nav="comprar" data-draw="${d.id}">Comprar</button>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+// ── COMPRAR ───────────────────────────────────────────────────
+function renderComprar(){
+  const scheduledDraws=S.draws.filter(d=>d.status==='scheduled'||d.status==='live');
+  return`<div class="page-wrap">
+    <div class="section-title"><h1 class="gold">🛒 Comprar Hojas</h1><p class="gray">Elige tu sorteo y cantidad de hojas</p></div>
+    ${scheduledDraws.length===0
+      ?`<div class="card glass text-center"><p class="gray">No hay sorteos disponibles actualmente.</p><button class="btn-outline mt-1" data-nav="home">Volver</button></div>`
+      :`<div class="draw-list">${scheduledDraws.map(d=>`
+        <div class="card glass">
+          <div class="draw-card-top">
+            <div>
+              <div class="fw-bold white fs-md">${d.name}</div>
+              <div class="gray small">${d.date} – ${d.time}</div>
+              ${d.description?`<div class="gray small mt-05">${d.description}</div>`:''}
+            </div>
+            <div class="price-tag">
+              <div class="gold fw-bold fs-lg">$${(d.pricePerSheet||4000).toLocaleString('es-CO')}</div>
+              <div class="gray small">por hoja</div>
+            </div>
+          </div>
+          <div class="draw-card-info">
+            <span>🃏 ${d.cardsPerSheet||6} cartones/hoja</span>
+            <span ${d.status==='live'?'class="red"':''}>● ${d.status==='live'?'En Vivo':'Programado'}</span>
+          </div>
+          <div class="sheet-picker" id="picker-${d.id}">
+            <label class="gray small">Hojas a comprar:</label>
+            <div class="qty-row">
+              <button class="qty-btn" data-minus data-id="${d.id}">−</button>
+              <span class="qty-val" id="qty-${d.id}">1</span>
+              <button class="qty-btn" data-plus data-id="${d.id}">+</button>
+            </div>
+            <div class="qty-info gray small" id="qinfo-${d.id}">
+              ${d.cardsPerSheet||6} cartones · $${(d.pricePerSheet||4000).toLocaleString('es-CO')} total
+            </div>
+          </div>
+          <button class="btn-gold w-full" data-checkout="${d.id}">Continuar Compra →</button>
+        </div>
+      `).join('')}</div>`}
+  </div>`;
+}
+
+// ── CHECKOUT ──────────────────────────────────────────────────
+function renderCheckout(){
+  const draw=S.checkoutDraw;
+  if(!draw) return`<div class="page-wrap"><div class="card glass text-center"><p class="gray">Selecciona un sorteo para comprar.</p><button class="btn-gold" data-nav="comprar">Ir a comprar</button></div></div>`;
+  const n=S.checkoutSheets||1;
+  const pps=draw.pricePerSheet||4000;
+  const cps=draw.cardsPerSheet||6;
+  const total=pps*n;
+  const cards=cps*n;
+  return`<div class="page-wrap narrow">
+    <button class="btn-back" data-nav="comprar">← Volver</button>
+    <h1 class="gold">🛒 Finalizar Compra</h1>
+    <p class="gray">${draw.name}</p>
+    <div class="checkout-grid">
+      <div class="card glass">
+        <h3 class="white mb-1">Tus datos</h3>
+        <div class="form-group"><label>Nombre completo</label><input id="co-name" type="text" placeholder="Juan Pérez" class="inp"/></div>
+        <div class="form-group"><label>Teléfono</label><input id="co-phone" type="tel" placeholder="3001234567" class="inp"/></div>
+        <div class="form-group"><label>Cédula</label><input id="co-id" type="text" placeholder="1234567890" class="inp"/></div>
+        <button class="btn-gold w-full mt-1" id="btn-checkout-submit">📲 Confirmar y Contactar por WhatsApp</button>
+        <div id="checkout-error" class="error-msg hidden"></div>
+      </div>
+      <div>
+        <div class="card glass mb-1">
+          <h3 class="white">Resumen</h3>
+          <div class="summary-row"><span class="gray">Sorteo</span><span class="white">${draw.name}</span></div>
+          <div class="summary-row"><span class="gray">Hojas</span><span class="white">${n}</span></div>
+          <div class="summary-row"><span class="gray">Cartones</span><span class="white">${cards}</span></div>
+          <div class="summary-row"><span class="gray">Precio/hoja</span><span class="white">$${pps.toLocaleString('es-CO')}</span></div>
+          <div class="summary-row total"><span>TOTAL</span><span class="gold fw-bold fs-lg">$${total.toLocaleString('es-CO')}</span></div>
+        </div>
+        ${S.settings.bankAccount?`<div class="card glass">
+          <h3 class="white">Datos de pago</h3>
+          <div class="summary-row"><span class="gray">Banco</span><span class="white">${S.settings.bankName||''}</span></div>
+          <div class="summary-row"><span class="gray">Cuenta</span><span class="white">${S.settings.bankAccount}</span></div>
+          <div class="summary-row"><span class="gray">Titular</span><span class="white">${S.settings.accountHolder||''}</span></div>
+        </div>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── PLAY ──────────────────────────────────────────────────────
+function renderPlay(){
+  if(!S.isAuthenticated){
+    return`<div class="page-wrap narrow flex-center">
+      <div class="card glass text-center" style="max-width:420px;width:100%">
+        <div style="font-size:4rem">🎱</div>
+        <h2 class="gold">Ingresar a la Sala</h2>
+        <p class="gray">Ingresa tu ID de acceso para ver tus cartones</p>
+        <div class="form-group">
+          <label>ID de Acceso</label>
+          <input id="play-access" type="text" placeholder="BL_1234567890_ABC123" class="inp text-center mono"/>
+        </div>
+        <button class="btn-gold w-full" id="btn-play-login">▶ Ingresar</button>
+        <p class="gray small mt-1">Tu ID fue enviado por WhatsApp al confirmar tu compra.</p>
+      </div>
+    </div>`;
+  }
+
+  const gs=S.gameState;
+  const draw=S.currentDraw;
+  const drawnSet=new Set(gs.drawnBalls||[]);
+
+  const mySheets=S.sheets.filter(sh=>sh.accessId===S.accessId||sh.purchaseId===S.accessId);
+
+  return`<div class="page-wrap">
+    <div class="play-header">
+      <div>
+        <h1 class="gold">🎱 Sala de Juego</h1>
+        <p class="gray small">ID: <span class="mono">${S.accessId}</span></p>
+      </div>
+      <button class="btn-outline sm" id="btn-play-logout">Salir</button>
+    </div>
+
+    ${!gs.currentDrawId||gs.status==='waiting'
+      ?`<div class="card glass text-center mb-1"><div style="font-size:3rem">⏳</div><h3 class="white">Esperando sorteo...</h3><p class="gray">El administrador iniciará el juego en breve.</p></div>`
+      :`<div class="play-live-bar">
+        <div>
+          <span class="badge red">🔴 ${gs.status==='drawing'?'EN VIVO':gs.status==='paused'?'PAUSADO':'FINALIZADO'}</span>
+          <span class="gray small ml-1">${draw?.name||''}</span>
+        </div>
+        ${gs.currentBall?`<div class="big-ball sm" style="background:${getBallColor(gs.currentBall)}">
+          <span class="ball-letter">${getBallLetter(gs.currentBall)}</span>
+          <span>${gs.currentBall}</span>
+        </div>`:''}
+        <span class="gray small">${gs.drawnBalls.length}/75 balotas</span>
+      </div>`}
+
+    ${gs.drawnBalls&&gs.drawnBalls.length>0?`
+    <div class="card glass mb-1">
+      <div class="gray small mb-05">Balotas sorteadas</div>
+      <div class="balls-grid">
+        ${gs.drawnBalls.map(b=>`<span class="small-ball" style="background:${getBallColor(b)}">${b}</span>`).join('')}
+      </div>
+    </div>`:''}
+
+    ${mySheets.length>0
+      ? mySheets.map((sheet,si)=>`
+        <div class="mb-1">
+          <h3 class="white">Hoja ${si+1}</h3>
+          <div class="cards-row">
+            ${sheet.cards.map((card,ci)=>renderBingoCard(card,gs.drawnBalls||[],si,ci)).join('')}
+          </div>
+        </div>`).join('')
+      : renderDemoCards(gs.drawnBalls||[])}
+  </div>`;
+}
+
+function renderBingoCard(card,drawn,si,ci){
+  const won=['horizontal_line','vertical_line','diagonal','four_corners','cross','full_card']
+    .some(t=>checkWin(card.numbers||card,drawn,t));
+  return`<div class="bingo-card ${won?'won':''}">
+    ${won?`<div class="win-banner">🎉 ¡BINGO!</div>`:''}
+    <div class="bingo-header">
+      ${['B','I','N','G','O'].map(l=>`<div class="bingo-col-hdr">${l}</div>`).join('')}
+    </div>
+    <div class="bingo-grid">
+      ${Array.from({length:5},(_,row)=>
+        Array.from({length:5},(_,col)=>{
+          const nums=card.numbers||card;
+          const v=nums[col][row];
+          const marked=v===null||new Set(drawn).has(v);
+          return`<div class="bingo-cell ${marked?'marked':''} ${v===null?'free':''}">${v===null?'★':v}</div>`;
+        }).join('')
+      ).join('')}
+    </div>
+  </div>`;
+}
+
+function renderDemoCards(drawn){
+  if(!window._demoSheet){
+    window._demoSheet=generateSheet('demo',6,'demo');
+  }
+  return`<div class="mb-1">
+    <div class="gray small mb-05">🎭 Cartones de demostración (compra para ver los tuyos)</div>
+    <div class="cards-row">
+      ${window._demoSheet.cards.slice(0,3).map((c,i)=>renderBingoCard(c,drawn,0,i)).join('')}
+    </div>
+  </div>`;
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function renderLogin(){
+  return`<div class="page-wrap narrow flex-center">
+    <div class="card glass" style="max-width:420px;width:100%">
+      <div class="text-center mb-1">
+        <div style="font-size:3rem">🔐</div>
+        <h1 class="gold">BOLSILLO LLENO</h1>
+        <p class="gray small">Panel de Administración</p>
+      </div>
+      <div class="form-group"><label>Correo</label><input id="l-email" type="email" class="inp" placeholder="admin@bolsillolleno.com"/></div>
+      <div class="form-group"><label>Contraseña</label><input id="l-pass" type="password" class="inp" placeholder="••••••••"/></div>
+      <div id="login-error" class="error-msg hidden"></div>
+      <button class="btn-gold w-full mt-1" id="btn-login">🔑 Iniciar Sesión</button>
+      <button class="btn-back mt-1" data-nav="home">← Volver al Portal</button>
+    </div>
+  </div>`;
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────
+function renderAdmin(){
+  const tabs=[
+    {id:'dashboard',label:'Dashboard'},
+    {id:'draws',label:'Sorteos'},
+    {id:'purchases',label:'Compras'},
+    {id:'game',label:'Control Juego'},
+    {id:'patterns',label:'Figuras'},
+    {id:'winners',label:'Ganadores'},
+    {id:'settings',label:'Config'},
+  ];
+  return`<div class="page-wrap">
+    <h1 class="gold">⚙️ Panel de Administración</h1>
+    <div class="admin-tabs">
+      ${tabs.map(t=>`<button class="tab-btn ${S.adminTab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('')}
+    </div>
+    <div class="tab-content">
+      ${renderAdminTab()}
+    </div>
+  </div>`;
+}
+
+function renderAdminTab(){
+  switch(S.adminTab){
+    case'dashboard': return renderAdminDash();
+    case'draws':     return renderAdminDraws();
+    case'purchases': return renderAdminPurchases();
+    case'game':      return renderAdminGame();
+    case'patterns':  return renderAdminPatterns();
+    case'winners':   return renderAdminWinners();
+    case'settings':  return renderAdminSettings();
+    default: return '';
+  }
+}
+
+function renderAdminDash(){
+  const confirmed=S.purchases.filter(p=>p.status==='confirmed');
+  const pending=S.purchases.filter(p=>p.status==='pending');
+  const totalSales=confirmed.reduce((s,p)=>s+(p.totalPrice||0),0);
+  const totalSheets=confirmed.reduce((s,p)=>s+(p.sheetCount||0),0);
+  const stats=[
+    {l:'Ventas Totales',v:`$${totalSales.toLocaleString('es-CO')}`,icon:'💰',c:'green'},
+    {l:'Hojas Vendidas',v:totalSheets,icon:'🃏',c:'yellow'},
+    {l:'Compras Totales',v:S.purchases.length,icon:'🛒',c:'blue'},
+    {l:'Pendientes',v:pending.length,icon:'⏳',c:'orange'},
+    {l:'Ganadores',v:S.winners.length,icon:'🏆',c:'purple'},
+    {l:'Sorteos Activos',v:S.draws.filter(d=>d.status==='live').length,icon:'🎱',c:'red'},
+  ];
+  return`<div class="stats-grid">
+    ${stats.map(s=>`<div class="card glass stat-card">
+      <div class="stat-icon ${s.c}">${s.icon}</div>
+      <div class="stat-label gray small">${s.l}</div>
+      <div class="stat-val white">${s.v}</div>
+    </div>`).join('')}
+  </div>
+  <div class="grid2 mt-1">
+    <div class="card glass">
+      <h3 class="white">Compras Recientes</h3>
+      ${S.purchases.slice(0,5).map(p=>`<div class="list-item">
+        <div><div class="white small">${p.customerName}</div><div class="gray small">${p.sheetCount} hojas · $${(p.totalPrice||0).toLocaleString('es-CO')}</div></div>
+        <span class="badge ${p.status==='confirmed'?'green':p.status==='pending'?'yellow':'red'}">${p.status}</span>
+      </div>`).join('')}
+      ${S.purchases.length===0?`<p class="gray small">Sin compras</p>`:''}
+    </div>
+    <div class="card glass">
+      <h3 class="white">Próximos Sorteos</h3>
+      ${S.draws.filter(d=>d.status==='scheduled').slice(0,5).map(d=>`<div class="list-item">
+        <div><div class="white small">${d.name}</div><div class="gray small">${d.date} – ${d.time}</div></div>
+        <span class="gold small">$${(d.pricePerSheet||0).toLocaleString('es-CO')}</span>
+      </div>`).join('')}
+      ${S.draws.filter(d=>d.status==='scheduled').length===0?`<p class="gray small">Sin sorteos</p>`:''}
+    </div>
+  </div>`;
+}
+
+function renderAdminDraws(){
+  return`<div>
+    <div class="admin-bar">
+      <h2 class="white">Sorteos</h2>
+      <button class="btn-gold sm" id="btn-show-draw-form">+ Nuevo Sorteo</button>
+    </div>
+    <div id="draw-form-wrap" class="hidden">
+      <div class="card glass mb-1">
+        <h3 class="white">Nuevo Sorteo</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre</label><input id="df-name" class="inp" placeholder="Bingo Mayo 2026"/></div>
+          <div class="form-group"><label>Descripción</label><input id="df-desc" class="inp" placeholder="Opcional"/></div>
+          <div class="form-group"><label>Fecha</label><input id="df-date" type="date" class="inp"/></div>
+          <div class="form-group"><label>Hora</label><input id="df-time" type="time" class="inp"/></div>
+          <div class="form-group"><label>Precio/hoja ($)</label><input id="df-price" type="number" class="inp" value="4000"/></div>
+          <div class="form-group"><label>Cartones/hoja</label><input id="df-cards" type="number" class="inp" value="6"/></div>
+        </div>
+        <div class="flex-gap mt-1">
+          <button class="btn-gold" id="btn-save-draw">💾 Guardar</button>
+          <button class="btn-outline" id="btn-cancel-draw">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    <div class="draw-list">
+      ${S.draws.map(d=>`<div class="card glass draw-item">
+        <div>
+          <div class="fw-bold white">${d.name}</div>
+          <div class="gray small">${d.date} – ${d.time} · $${(d.pricePerSheet||0).toLocaleString('es-CO')}/hoja · ${d.cardsPerSheet||6} cartones</div>
+        </div>
+        <div class="flex-gap">
+          <span class="badge ${d.status==='live'?'red':d.status==='finished'?'gray':'yellow'}">${d.status}</span>
+          <button class="btn-danger sm" data-delete-draw="${d.id}">Eliminar</button>
+        </div>
+      </div>`).join('')}
+      ${S.draws.length===0?`<p class="gray">Sin sorteos creados.</p>`:''}
+    </div>
+  </div>`;
+}
+
+function renderAdminPurchases(){
+  return`<div>
+    <h2 class="white mb-1">Compras</h2>
+    <div class="draw-list">
+      ${S.purchases.map(p=>`<div class="card glass">
+        <div class="purchase-top">
+          <div>
+            <div class="fw-bold white">${p.customerName}</div>
+            <div class="gray small">Tel: ${p.customerPhone} · ID: ${p.customerId}</div>
+            <div class="gray small">${p.sheetCount} hojas · $${(p.totalPrice||0).toLocaleString('es-CO')}</div>
+            ${p.accessId?`<div class="gold small mono">Acceso: ${p.accessId}</div>`:''}
+          </div>
+          <div class="flex-col-gap">
+            <span class="badge ${p.status==='confirmed'?'green':p.status==='pending'?'yellow':'red'}">${p.status}</span>
+            ${p.status==='pending'?`
+              <button class="btn-gold sm" data-confirm-purchase="${p.id}">✓ Confirmar</button>
+              <button class="btn-danger sm" data-reject-purchase="${p.id}">✗ Rechazar</button>
+            `:''}
+            ${p.status==='confirmed'&&p.customerPhone?`
+              <button class="btn-outline sm" data-wa-access="${p.id}">📲 Enviar acceso</button>
+            `:''}
+          </div>
+        </div>
+      </div>`).join('')}
+      ${S.purchases.length===0?`<p class="gray">Sin compras.</p>`:''}
+    </div>
+  </div>`;
+}
+
+function renderAdminGame(){
+  const gs=S.gameState;
+  const scheduledDraws=S.draws.filter(d=>d.status==='scheduled');
+  return`<div class="grid2">
+    <div class="card glass">
+      <h3 class="white">Estado del Juego</h3>
+      <div class="summary-row"><span class="gray">Estado</span><span class="badge ${gs.status==='drawing'?'red':gs.status==='paused'?'yellow':'gray'}">${gs.status}</span></div>
+      <div class="summary-row"><span class="gray">Sorteo</span><span class="white">${S.currentDraw?.name||'Ninguno'}</span></div>
+      <div class="summary-row"><span class="gray">Balotas</span><span class="white">${gs.drawnBalls.length}/75</span></div>
+
+      ${gs.currentBall?`<div class="text-center my-1">
+        <div class="big-ball" style="background:${getBallColor(gs.currentBall)}">
+          <span class="ball-letter">${getBallLetter(gs.currentBall)}</span>
+          <span class="ball-num">${gs.currentBall}</span>
+        </div>
+      </div>`:''}
+
+      ${gs.drawnBalls.length>0?`<div class="balls-grid mb-1">
+        ${gs.drawnBalls.map(b=>`<span class="small-ball" style="background:${getBallColor(b)}">${b}</span>`).join('')}
+      </div>`:''}
+
+      <div class="flex-gap">
+        ${gs.status==='drawing'?`<button class="btn-gold sm" id="btn-draw-ball">🎱 Sacar Balota</button>`:''}
+        ${gs.status==='drawing'?`<button class="btn-outline sm" id="btn-pause-game">⏸ Pausar</button>`:''}
+        ${gs.status==='paused'?`<button class="btn-gold sm" id="btn-resume-game">▶ Reanudar</button>`:''}
+        ${gs.currentDrawId?`<button class="btn-danger sm" id="btn-finish-game">⏹ Finalizar</button>`:''}
+      </div>
+    </div>
+
+    ${!gs.currentDrawId?`<div class="card glass">
+      <h3 class="white">Iniciar Sorteo</h3>
+      <div class="form-group">
+        <label>Seleccionar Sorteo</label>
+        <select id="sel-draw" class="inp">
+          <option value="">Selecciona...</option>
+          ${scheduledDraws.map(d=>`<option value="${d.id}">${d.name} – ${d.date} ${d.time}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Velocidad (seg entre balotas)</label>
+        <input id="inp-speed" type="number" class="inp" value="${gs.ballSpeed||5}" min="1" max="60"/>
+      </div>
+      <button class="btn-gold w-full mt-1" id="btn-start-game">▶ Iniciar Sorteo</button>
+    </div>`:`<div class="card glass"><p class="gray">Un sorteo está en curso.</p></div>`}
+  </div>`;
+}
+
+function renderAdminPatterns(){
+  return`<div>
+    <div class="admin-bar">
+      <h2 class="white">Figuras y Premios</h2>
+      <button class="btn-gold sm" id="btn-show-pattern-form">+ Nueva Figura</button>
+    </div>
+    <div id="pattern-form-wrap" class="hidden">
+      <div class="card glass mb-1">
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre</label><input id="pf-name" class="inp" placeholder="Línea Horizontal"/></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="pf-type" class="inp">
+              <option value="horizontal_line">Línea Horizontal</option>
+              <option value="vertical_line">Línea Vertical</option>
+              <option value="diagonal">Diagonal</option>
+              <option value="four_corners">Cuatro Esquinas</option>
+              <option value="cross">Cruz</option>
+              <option value="full_card">Cartón Lleno</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Premio ($)</label><input id="pf-prize" type="number" class="inp" value="100000"/></div>
+          <div class="form-group"><label>Descripción</label><input id="pf-desc" class="inp"/></div>
+        </div>
+        <div class="flex-gap mt-1">
+          <button class="btn-gold" id="btn-save-pattern">💾 Guardar</button>
+          <button class="btn-outline" id="btn-cancel-pattern">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    <div class="draw-list">
+      ${S.patterns.map(p=>`<div class="card glass draw-item">
+        <div>
+          <div class="fw-bold white">${p.name}</div>
+          <div class="gray small">${p.type} · ${p.description||''}</div>
+        </div>
+        <div class="flex-gap">
+          <span class="gold fw-bold">$${(p.prize||0).toLocaleString('es-CO')}</span>
+          <button class="btn-danger sm" data-delete-pattern="${p.id}">Eliminar</button>
+        </div>
+      </div>`).join('')}
+      ${S.patterns.length===0?`<p class="gray">Sin figuras. <button class="btn-gold sm" id="btn-init-patterns">Cargar predeterminadas</button></p>`:''}
+    </div>
+  </div>`;
+}
+
+function renderAdminWinners(){
+  return`<div>
+    <h2 class="white mb-1">Ganadores</h2>
+    <div class="draw-list">
+      ${S.winners.map(w=>`<div class="card glass draw-item">
+        <div>
+          <div class="fw-bold white">${w.customerName||'—'}</div>
+          <div class="gray small">${w.patternName||''} · ${w.ballCount||0} balotas</div>
+        </div>
+        <div class="text-right">
+          <div class="gold fw-bold">$${(w.prize||0).toLocaleString('es-CO')}</div>
+          <span class="badge ${w.confirmed?'green':'yellow'}">${w.confirmed?'Confirmado':'Pendiente'}</span>
+        </div>
+      </div>`).join('')}
+      ${S.winners.length===0?`<p class="gray">Sin ganadores aún.</p>`:''}
+    </div>
+  </div>`;
+}
+
+function renderAdminSettings(){
+  const s=S.settings;
+  return`<div class="card glass narrow">
+    <h2 class="white">Configuración</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>WhatsApp (con código de país)</label><input id="s-wa" class="inp" value="${s.whatsappNumber||''}"/></div>
+      <div class="form-group"><label>Banco</label><input id="s-bank" class="inp" value="${s.bankName||''}"/></div>
+      <div class="form-group"><label>Número de cuenta</label><input id="s-acc" class="inp" value="${s.bankAccount||''}"/></div>
+      <div class="form-group"><label>Titular</label><input id="s-holder" class="inp" value="${s.accountHolder||''}"/></div>
+      <div class="form-group"><label>Precio por hoja ($)</label><input id="s-price" type="number" class="inp" value="${s.pricePerSheet||4000}"/></div>
+      <div class="form-group"><label>Cartones por hoja</label><input id="s-cph" type="number" class="inp" value="${s.cardsPerSheet||6}"/></div>
+    </div>
+    <button class="btn-gold mt-1" id="btn-save-settings">💾 Guardar Configuración</button>
+  </div>`;
+}
+
+// ── FOOTER ────────────────────────────────────────────────────
+function renderFooter(){
+  return`<footer class="footer">
+    <p class="gray small">© 2026 Bolsillo Lleno · Bingo Online</p>
+  </footer>`;
+}
+
+// ── BIND EVENTS ───────────────────────────────────────────────
+const qtys={};
+function bindEvents(){
+  // Navigation
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const p=el.dataset.nav;
+      if(p==='comprar'){
+        const drawId=el.dataset.draw;
+        if(drawId){
+          const d=S.draws.find(x=>x.id===drawId);
+          S.checkoutDraw=d; S.checkoutSheets=1;
+        }
+        nav('comprar');
+      } else nav(p);
+    });
+  });
+
+  // Logout
+  document.getElementById('btn-logout')?.addEventListener('click', async()=>{
+    await signOut(auth); nav('home');
+  });
+
+  // Login
+  document.getElementById('btn-login')?.addEventListener('click', async()=>{
+    const email=document.getElementById('l-email').value;
+    const pass=document.getElementById('l-pass').value;
+    const err=document.getElementById('login-error');
+    try{
+      await signInWithEmailAndPassword(auth,email,pass);
+      nav('admin');
+    } catch(e){
+      err.textContent=e.message; err.classList.remove('hidden');
     }
+  });
 
-    .font-display { font-family: 'Playfair Display', serif; }
+  // Sheet qty pickers
+  S.draws.filter(d=>d.status==='scheduled'||d.status==='live').forEach(d=>{
+    if(!qtys[d.id]) qtys[d.id]=1;
+    const pps=d.pricePerSheet||4000;
+    const cps=d.cardsPerSheet||6;
 
-    /* Animated background */
-    .bg-animated {
-      background: radial-gradient(ellipse at 20% 50%, #0d3d26 0%, transparent 60%),
-                  radial-gradient(ellipse at 80% 20%, #1a3a00 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 80%, #0f2d1e 0%, transparent 60%),
-                  #0A1F14;
-    }
+    document.querySelector(`[data-minus][data-id="${d.id}"]`)?.addEventListener('click',()=>{
+      if(qtys[d.id]>1) qtys[d.id]--;
+      const qv=document.getElementById(`qty-${d.id}`);
+      const qi=document.getElementById(`qinfo-${d.id}`);
+      if(qv) qv.textContent=qtys[d.id];
+      if(qi) qi.textContent=`${cps*qtys[d.id]} cartones · $${(pps*qtys[d.id]).toLocaleString('es-CO')} total`;
+    });
+    document.querySelector(`[data-plus][data-id="${d.id}"]`)?.addEventListener('click',()=>{
+      qtys[d.id]++;
+      const qv=document.getElementById(`qty-${d.id}`);
+      const qi=document.getElementById(`qinfo-${d.id}`);
+      if(qv) qv.textContent=qtys[d.id];
+      if(qi) qi.textContent=`${cps*qtys[d.id]} cartones · $${(pps*qtys[d.id]).toLocaleString('es-CO')} total`;
+    });
+    document.querySelector(`[data-checkout="${d.id}"]`)?.addEventListener('click',()=>{
+      S.checkoutDraw=d; S.checkoutSheets=qtys[d.id]||1; nav('checkout');
+    });
+  });
 
-    /* Gold gradient text */
-    .text-gold-gradient {
-      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+  // Checkout submit
+  document.getElementById('btn-checkout-submit')?.addEventListener('click', async()=>{
+    const name=document.getElementById('co-name').value.trim();
+    const phone=document.getElementById('co-phone').value.trim();
+    const id=document.getElementById('co-id').value.trim();
+    const err=document.getElementById('checkout-error');
+    if(!name||!phone||!id){err.textContent='Completa todos los campos.';err.classList.remove('hidden');return;}
+    try{
+      const draw=S.checkoutDraw;
+      const n=S.checkoutSheets;
+      const pps=draw.pricePerSheet||4000;
+      const cps=draw.cardsPerSheet||6;
+      const total=pps*n; const cards=cps*n;
+      const ref2=await addDoc(collection(db,'purchases'),{
+        customerName:name,customerPhone:phone,customerId:id,
+        drawId:draw.id,sheetCount:n,totalCards:cards,totalPrice:total,
+        status:'pending',createdAt:Date.now()
+      });
+      const wa=S.settings.whatsappNumber||'573001234567';
+      const msg=encodeURIComponent(`*Hola! Quiero comprar hojas de Bingo*\n\n*Sorteo:* ${draw.name}\n*Nombre:* ${name}\n*Teléfono:* ${phone}\n*Cédula:* ${id}\n*Hojas:* ${n}\n*Cartones:* ${cards}\n*Total:* $${total.toLocaleString('es-CO')}\n*ID Compra:* ${ref2.id}\n\nAdjunto el comprobante de pago.`);
+      window.open(`https://wa.me/${wa}?text=${msg}`,'_blank');
+      err.className='success-msg'; err.textContent='¡Solicitud enviada! Continúa por WhatsApp.'; err.classList.remove('hidden');
+    } catch(e){err.textContent=e.message;err.classList.remove('hidden');}
+  });
 
-    /* Bingo card cell */
-    .bingo-cell {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10px;
-      font-size: clamp(14px, 4vw, 22px);
-      font-weight: 700;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      cursor: default;
-      position: relative;
-      border: 2px solid rgba(245, 197, 24, 0.15);
-      background: rgba(255,255,255,0.04);
-    }
+  // Play login
+  document.getElementById('btn-play-login')?.addEventListener('click',()=>{
+    const val=document.getElementById('play-access').value.trim();
+    if(val){ S.accessId=val; S.isAuthenticated=true; localStorage.setItem('bl_access',val); render(); }
+  });
+  document.getElementById('btn-play-logout')?.addEventListener('click',()=>{
+    S.isAuthenticated=false; S.accessId=''; localStorage.removeItem('bl_access'); render();
+  });
 
-    .bingo-cell.called {
-      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
-      border-color: var(--gold-light);
-      color: var(--dark);
-      box-shadow: 0 0 20px rgba(245, 197, 24, 0.6), 0 0 40px rgba(245, 197, 24, 0.2);
-      transform: scale(1.05);
-    }
+  // Admin tabs
+  document.querySelectorAll('[data-tab]').forEach(el=>{
+    el.addEventListener('click',()=>{ S.adminTab=el.dataset.tab; render(); });
+  });
 
-    .bingo-cell.free-space {
-      background: linear-gradient(135deg, var(--emerald-light) 0%, var(--emerald) 100%);
-      border-color: var(--emerald-light);
-      color: white;
-      box-shadow: 0 0 15px rgba(34, 168, 112, 0.4);
-    }
+  // Admin draws
+  document.getElementById('btn-show-draw-form')?.addEventListener('click',()=>{
+    document.getElementById('draw-form-wrap').classList.toggle('hidden');
+  });
+  document.getElementById('btn-cancel-draw')?.addEventListener('click',()=>{
+    document.getElementById('draw-form-wrap').classList.add('hidden');
+  });
+  document.getElementById('btn-save-draw')?.addEventListener('click', async()=>{
+    const name=document.getElementById('df-name').value.trim();
+    const desc=document.getElementById('df-desc').value.trim();
+    const date=document.getElementById('df-date').value;
+    const time=document.getElementById('df-time').value;
+    const price=parseInt(document.getElementById('df-price').value)||4000;
+    const cards=parseInt(document.getElementById('df-cards').value)||6;
+    if(!name||!date||!time) return alert('Completa nombre, fecha y hora');
+    await addDoc(collection(db,'draws'),{name,description:desc,date,time,pricePerSheet:price,cardsPerSheet:cards,status:'scheduled',drawnBalls:[],currentBall:null,ballSpeed:5,isAutoDraw:false,createdAt:Date.now()});
+    document.getElementById('draw-form-wrap').classList.add('hidden');
+  });
+  document.querySelectorAll('[data-delete-draw]').forEach(el=>{
+    el.addEventListener('click', async()=>{
+      if(confirm('¿Eliminar este sorteo?')) await deleteDoc(doc(db,'draws',el.dataset.deleteDraw));
+    });
+  });
 
-    .bingo-cell.called .stamp {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8em;
-      opacity: 0.3;
-    }
-
-    /* Number ball */
-    .number-ball {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      font-weight: 900;
-      background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold-dark));
-      color: var(--dark);
-      box-shadow: 0 0 30px rgba(245, 197, 24, 0.7), inset 0 -4px 8px rgba(0,0,0,0.3), inset 0 4px 8px rgba(255,255,255,0.3);
-      animation: ballDrop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      font-family: 'Playfair Display', serif;
-    }
-
-    @keyframes ballDrop {
-      0% { transform: translateY(-60px) scale(0.5); opacity: 0; }
-      100% { transform: translateY(0) scale(1); opacity: 1; }
-    }
-
-    /* Button styles */
-    .btn-gold {
-      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 60%, var(--gold-dark) 100%);
-      color: var(--dark);
-      font-weight: 700;
-      border: none;
-      padding: 14px 32px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-size: 15px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 20px rgba(245, 197, 24, 0.4);
-      font-family: 'DM Sans', sans-serif;
-      letter-spacing: 0.5px;
-    }
-    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245, 197, 24, 0.6); }
-    .btn-gold:active { transform: translateY(0); }
-    .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-    .btn-emerald {
-      background: linear-gradient(135deg, var(--emerald-light) 0%, var(--emerald) 100%);
-      color: white;
-      font-weight: 700;
-      border: 1px solid rgba(34, 168, 112, 0.4);
-      padding: 12px 28px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34, 168, 112, 0.4); }
-
-    .btn-red {
-      background: linear-gradient(135deg, #ff6b6b 0%, #c0392b 100%);
-      color: white;
-      font-weight: 700;
-      border: none;
-      padding: 12px 28px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .btn-red:hover { transform: translateY(-2px); }
-
-    /* Glass card */
-    .glass-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(245, 197, 24, 0.15);
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-    }
-
-    /* Input style */
-    .input-gold {
-      background: rgba(255,255,255,0.06);
-      border: 2px solid rgba(245, 197, 24, 0.25);
-      border-radius: 12px;
-      padding: 14px 18px;
-      color: white;
-      font-size: 15px;
-      width: 100%;
-      transition: border-color 0.3s;
-      font-family: 'DM Sans', sans-serif;
-      outline: none;
-    }
-    .input-gold:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.15); }
-    .input-gold::placeholder { color: rgba(255,255,255,0.35); }
-
-    /* Winner overlay */
-    .winner-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.4s ease;
-    }
-
-    .winner-card {
-      background: linear-gradient(135deg, #0d3d26 0%, #0A1F14 100%);
-      border: 3px solid var(--gold);
-      border-radius: 24px;
-      padding: 48px 40px;
-      text-align: center;
-      max-width: 380px;
-      width: 90%;
-      box-shadow: 0 0 60px rgba(245, 197, 24, 0.5), 0 0 120px rgba(245, 197, 24, 0.2);
-      animation: winnerPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    @keyframes winnerPop {
-      0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
-      100% { transform: scale(1) rotate(0); opacity: 1; }
-    }
-
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    /* Confetti dot */
-    .confetti-bg {
-      background-image:
-        radial-gradient(circle, var(--gold) 1px, transparent 1px),
-        radial-gradient(circle, var(--emerald-light) 1px, transparent 1px);
-      background-size: 30px 30px, 60px 60px;
-      background-position: 0 0, 15px 15px;
-      opacity: 0.08;
-    }
-
-    /* Number history pill */
-    .num-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      font-size: 12px;
-      font-weight: 700;
-      background: rgba(245, 197, 24, 0.15);
-      border: 1px solid rgba(245, 197, 24, 0.3);
-      color: var(--gold);
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(245, 197, 24, 0.3); border-radius: 3px; }
-
-    /* Pulse animation */
-    @keyframes pulse-gold {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.4); }
-      50% { box-shadow: 0 0 0 12px rgba(245, 197, 24, 0); }
-    }
-    .pulse-gold { animation: pulse-gold 2s infinite; }
-
-    /* Ticker */
-    @keyframes shimmer {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    .shimmer-text {
-      background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 40%, var(--gold) 60%, var(--gold-dark) 100%);
-      background-size: 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmer 3s linear infinite;
-    }
-
-    /* Tab bar */
-    .tab-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(10, 31, 20, 0.95);
-      border-top: 1px solid rgba(245, 197, 24, 0.15);
-      backdrop-filter: blur(20px);
-      z-index: 100;
-      padding: 8px 0 env(safe-area-inset-bottom, 8px);
-    }
-
-    /* Range input */
-    input[type=range] {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 6px;
-      background: rgba(245,197,24,0.2);
-      border-radius: 3px;
-      outline: none;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--gold);
-      cursor: pointer;
-      box-shadow: 0 0 10px rgba(245,197,24,0.5);
-    }
-
-    .header-logo {
-      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 60%, var(--gold-dark) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-  </style>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            gold: '#F5C518',
-            'gold-dark': '#C9A000',
-            'gold-light': '#FFE57A',
-            emerald: '#10583D',
-            'emerald-mid': '#1A7A55',
-            'emerald-light': '#22A870',
-            cream: '#FFF9EE',
-            dark: '#0A1F14',
-          }
+  // Admin purchases
+  document.querySelectorAll('[data-confirm-purchase]').forEach(el=>{
+    el.addEventListener('click', async()=>{
+      const pid=el.dataset.confirmPurchase;
+      const purchase=S.purchases.find(p=>p.id===pid);
+      if(!purchase) return;
+      const accessId=`BL_${Date.now()}_${Math.random().toString(36).substr(2,6).toUpperCase()}`;
+      // Generate and save sheets
+      const draw=S.draws.find(d=>d.id===purchase.drawId);
+      if(draw){
+        const sheets=generateSheets(purchase.drawId,purchase.sheetCount,purchase.totalCards/purchase.sheetCount,purchase.id);
+        for(const sheet of sheets){
+          sheet.accessId=accessId;
+          await addDoc(collection(db,'sheets'),{...sheet,accessId});
         }
       }
+      await updateDoc(doc(db,'purchases',pid),{status:'confirmed',accessId,confirmedAt:Date.now()});
+    });
+  });
+  document.querySelectorAll('[data-reject-purchase]').forEach(el=>{
+    el.addEventListener('click', async()=>{
+      await updateDoc(doc(db,'purchases',el.dataset.rejectPurchase),{status:'rejected'});
+    });
+  });
+  document.querySelectorAll('[data-wa-access]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const p=S.purchases.find(x=>x.id===el.dataset.waAccess);
+      if(!p||!p.accessId) return;
+      const wa=S.settings.whatsappNumber||'573001234567';
+      const msg=encodeURIComponent(`✅ *Tu compra fue confirmada!*\n\n*ID de Acceso:* \`${p.accessId}\`\n\nIngresa a bolsillolleno.com y úsalo en la sección "Jugar" para ver tus cartones. ¡Buena suerte! 🍀`);
+      window.open(`https://wa.me/${p.customerPhone}?text=${msg}`,'_blank');
+    });
+  });
+
+  // Admin game control
+  document.getElementById('btn-start-game')?.addEventListener('click', async()=>{
+    const drawId=document.getElementById('sel-draw')?.value;
+    const speed=parseInt(document.getElementById('inp-speed')?.value)||5;
+    if(!drawId) return alert('Selecciona un sorteo');
+    await updateDoc(doc(db,'draws',drawId),{status:'live',startedAt:Date.now()});
+    await fbUpdateGameState({currentDrawId:drawId,status:'drawing',drawnBalls:[],currentBall:null,ballSpeed:speed,lastDrawTime:Date.now()});
+  });
+  document.getElementById('btn-draw-ball')?.addEventListener('click', async()=>{
+    const ball=drawRandomBall(S.gameState.drawnBalls||[]);
+    const newDrawn=[...(S.gameState.drawnBalls||[]),ball];
+    await fbUpdateGameState({currentBall:ball,drawnBalls:newDrawn,lastDrawTime:Date.now()});
+    if(S.gameState.currentDrawId){
+      await updateDoc(doc(db,'draws',S.gameState.currentDrawId),{currentBall:ball,drawnBalls:newDrawn});
     }
-  </script>
+  });
+  document.getElementById('btn-pause-game')?.addEventListener('click', async()=>{
+    await fbUpdateGameState({status:'paused'});
+  });
+  document.getElementById('btn-resume-game')?.addEventListener('click', async()=>{
+    await fbUpdateGameState({status:'drawing'});
+  });
+  document.getElementById('btn-finish-game')?.addEventListener('click', async()=>{
+    if(!confirm('¿Finalizar el sorteo?')) return;
+    if(S.gameState.currentDrawId){
+      await updateDoc(doc(db,'draws',S.gameState.currentDrawId),{status:'finished',finishedAt:Date.now()});
+    }
+    await fbUpdateGameState({currentDrawId:null,status:'waiting',currentBall:null,drawnBalls:[]});
+  });
+
+  // Admin patterns
+  document.getElementById('btn-show-pattern-form')?.addEventListener('click',()=>{
+    document.getElementById('pattern-form-wrap')?.classList.toggle('hidden');
+  });
+  document.getElementById('btn-cancel-pattern')?.addEventListener('click',()=>{
+    document.getElementById('pattern-form-wrap')?.classList.add('hidden');
+  });
+  document.getElementById('btn-save-pattern')?.addEventListener('click', async()=>{
+    const name=document.getElementById('pf-name').value.trim();
+    const type=document.getElementById('pf-type').value;
+    const prize=parseInt(document.getElementById('pf-prize').value)||100000;
+    const desc=document.getElementById('pf-desc').value.trim();
+    if(!name) return alert('Ingresa un nombre');
+    await addDoc(collection(db,'patterns'),{name,type,prize,description:desc,createdAt:Date.now()});
+    document.getElementById('pattern-form-wrap')?.classList.add('hidden');
+  });
+  document.getElementById('btn-init-patterns')?.addEventListener('click', async()=>{
+    const defaults=[
+      {name:'Línea Horizontal',type:'horizontal_line',prize:100000,description:'Completa cualquier línea horizontal'},
+      {name:'Línea Vertical',type:'vertical_line',prize:100000,description:'Completa cualquier línea vertical'},
+      {name:'Diagonal',type:'diagonal',prize:100000,description:'Completa cualquier diagonal'},
+      {name:'Cuatro Esquinas',type:'four_corners',prize:200000,description:'Marca las 4 esquinas'},
+      {name:'Cruz',type:'cross',prize:300000,description:'Completa la cruz central'},
+      {name:'Cartón Lleno',type:'full_card',prize:1000000,description:'Marca todos los números'},
+    ];
+    for(const p of defaults) await addDoc(collection(db,'patterns'),p);
+  });
+  document.querySelectorAll('[data-delete-pattern]').forEach(el=>{
+    el.addEventListener('click', async()=>{
+      if(confirm('¿Eliminar figura?')) await deleteDoc(doc(db,'patterns',el.dataset.deletePattern));
+    });
+  });
+
+  // Admin settings
+  document.getElementById('btn-save-settings')?.addEventListener('click', async()=>{
+    const settings={
+      whatsappNumber:document.getElementById('s-wa').value.trim(),
+      bankName:document.getElementById('s-bank').value.trim(),
+      bankAccount:document.getElementById('s-acc').value.trim(),
+      accountHolder:document.getElementById('s-holder').value.trim(),
+      pricePerSheet:parseInt(document.getElementById('s-price').value)||4000,
+      cardsPerSheet:parseInt(document.getElementById('s-cph').value)||6,
+    };
+    await set(ref(rtdb,'settings'),settings);
+    alert('Configuración guardada ✅');
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+// Restore access session
+const storedAccess=localStorage.getItem('bl_access');
+if(storedAccess){ S.accessId=storedAccess; S.isAuthenticated=true; }
+
+initListeners();
+render();
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080808;--card:#111;--border:#2a2000;--gold:#eab308;
+  --gold2:#facc15;--gray:#9ca3af;--white:#f9f9f9;
+  --red:#ef4444;--green:#22c55e;--blue:#3b82f6;
+  --radius:14px;--font:'Outfit',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+.navbar{position:sticky;top:0;z-index:100;background:rgba(8,8,8,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.logo-btn{background:none;border:none;cursor:pointer}
+.logo-text{font-family:'Black Han Sans',sans-serif;font-size:1.3rem;background:linear-gradient(90deg,#facc15,#eab308,#ca8a04);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.05em}
+.nav-links{display:flex;align-items:center;gap:.25rem;flex-wrap:wrap}
+.nav-link{background:none;border:none;color:var(--gray);font-family:var(--font);font-size:.9rem;font-weight:500;cursor:pointer;padding:.45rem .85rem;border-radius:8px;transition:all .2s}
+.nav-link:hover,.nav-link.active{color:var(--gold);background:rgba(234,179,8,.1)}
+
+/* MAIN */
+.main{min-height:80vh}
+.page-wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem}
+.page-wrap.narrow{max-width:700px}
+.flex-center{align-items:center;justify-content:center;min-height:70vh}
+
+/* HERO */
+.hero{position:relative;min-height:88vh;display:flex;align-items:center;padding:4rem 1.5rem;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(234,179,8,.12) 0%,transparent 70%),radial-gradient(ellipse 50% 50% at 80% 50%,rgba(234,179,8,.07) 0%,transparent 60%)}
+.hero-content{position:relative;max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:999px;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.3);color:var(--gold);font-size:.85rem;font-weight:600;width:fit-content}
+.hero-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.08;letter-spacing:.01em}
+.hero-sub{color:var(--gray);font-size:1.05rem;line-height:1.6;max-width:520px}
+.hero-btns{display:flex;gap:.85rem;flex-wrap:wrap}
+.hero-stats{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.hstat{text-align:center}
+.hstat-n{font-family:'Black Han Sans',sans-serif;font-size:1.8rem}
+.hstat-l{font-size:.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:.1em}
+.hstat-sep{width:1px;height:2.5rem;background:rgba(234,179,8,.25)}
+
+/* SECTIONS */
+.section{padding:5rem 1.5rem;max-width:1200px;margin:0 auto}
+.section-title{text-align:center;margin-bottom:2.5rem}
+.section-title h2{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:.5rem}
+.section-title p{color:var(--gray)}
+.border-top{border-top:1px solid var(--border)}
+.cta-section{text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem;background:radial-gradient(ellipse 60% 80% at 50% 50%,rgba(234,179,8,.05) 0%,transparent 70%)}
+
+/* GRIDS */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}
+.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.85rem}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.85rem}
+
+/* CARDS */
+.card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;transition:border-color .2s}
+.card.glass{backdrop-filter:blur(8px)}
+.card:hover{border-color:rgba(234,179,8,.25)}
+
+/* DRAW DISPLAY */
+.draw-display{display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:start}
+.draw-info{display:flex;flex-direction:column;gap:.75rem}
+.draw-meta{display:flex;gap:1rem;flex-wrap:wrap;color:var(--gray);font-size:.9rem}
+.draw-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+.draw-ball-side{display:flex;flex-direction:column;align-items:center;gap:.5rem;min-width:120px}
+.draw-list{display:flex;flex-direction:column;gap:.85rem}
+.draw-item{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.draw-item-right{display:flex;align-items:center;gap:.75rem}
+.draw-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.75rem}
+.draw-card-info{display:flex;gap:1rem;font-size:.85rem;color:var(--gray);margin-bottom:.75rem}
+.price-tag{text-align:right}
+
+/* SHEET PICKER */
+.sheet-picker{margin:.75rem 0;display:flex;flex-direction:column;gap:.4rem}
+.qty-row{display:flex;align-items:center;gap:.75rem}
+.qty-btn{width:2.2rem;height:2.2rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--white);font-size:1.1rem;cursor:pointer;transition:all .2s}
+.qty-btn:hover{background:rgba(234,179,8,.15);border-color:var(--gold)}
+.qty-val{font-weight:700;font-size:1.2rem;color:var(--white);min-width:2rem;text-align:center}
+.qty-info{margin-top:.2rem}
+
+/* CHECKOUT */
+.checkout-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+@media(max-width:640px){.checkout-grid{grid-template-columns:1fr}}
+.summary-row{display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.9rem}
+.summary-row.total{font-weight:700;font-size:1rem;border-bottom:none;padding-top:.75rem}
+
+/* BINGO CARDS */
+.play-header{display:flex;justify-content:space-between;align-items:center}
+.play-live-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1.25rem}
+.cards-row{display:flex;flex-wrap:wrap;gap:1rem}
+.bingo-card{border:2px solid var(--border);border-radius:12px;padding:.75rem;position:relative;transition:all .3s;background:rgba(0,0,0,.4)}
+.bingo-card.won{border-color:var(--gold);background:rgba(234,179,8,.05);box-shadow:0 0 30px rgba(234,179,8,.2)}
+.win-banner{position:absolute;top:-1px;left:50%;transform:translateX(-50%) translateY(-50%);background:var(--gold);color:#000;font-weight:900;font-size:.75rem;padding:.25rem .75rem;border-radius:999px;white-space:nowrap;z-index:1}
+.bingo-header{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:3px}
+.bingo-col-hdr{font-weight:900;font-size:.8rem;text-align:center;color:var(--gold);padding:.3rem 0}
+.bingo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
+.bingo-cell{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);transition:all .3s;cursor:default}
+.bingo-cell.marked{background:rgba(234,179,8,.2);border-color:rgba(234,179,8,.5);color:var(--gold2)}
+.bingo-cell.free{background:rgba(234,179,8,.15);color:var(--gold);font-size:1rem}
+
+/* BALLS */
+.big-ball{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 2px 8px rgba(255,255,255,.2)}
+.big-ball.sm{width:55px;height:55px;font-size:.8rem}
+.ball-letter{font-size:.6rem;letter-spacing:.1em;opacity:.8;text-transform:uppercase}
+.ball-num{font-size:1.6rem;line-height:1}
+.balls-grid{display:flex;flex-wrap:wrap;gap:5px}
+.small-ball{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;font-size:.7rem;font-weight:700;color:#fff}
+
+/* PATTERNS */
+.pcard{display:flex;flex-direction:column;gap:.75rem}
+.pcardh{display:flex;justify-content:space-between;align-items:center}
+.pname{font-weight:600;color:var(--white)}
+.mini-board{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;width:fit-content}
+.mini-cell{width:16px;height:16px;border-radius:3px;background:rgba(255,255,255,.1)}
+.mini-cell.on{background:var(--gold);box-shadow:0 0 6px rgba(234,179,8,.5)}
+
+/* STEP CARDS */
+.step-icon{font-size:2rem;margin-bottom:.25rem}
+.step-num{font-family:'Black Han Sans',sans-serif;font-size:3rem;color:rgba(234,179,8,.08);position:absolute;top:.5rem;right:.75rem;line-height:1}
+
+/* WINNERS */
+.winner-icon{font-size:3rem;margin-bottom:.5rem}
+
+/* ADMIN */
+.admin-tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.5rem}
+.tab-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--gray);font-family:var(--font);font-size:.85rem;padding:.45rem .9rem;cursor:pointer;transition:all .2s}
+.tab-btn.active,.tab-btn:hover{background:var(--gold);color:#000;border-color:var(--gold);font-weight:700}
+.tab-content{}
+.admin-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.stat-card{display:flex;flex-direction:column;gap:.4rem}
+.stat-icon{font-size:1.75rem}
+.stat-label{font-size:.8rem}
+.stat-val{font-size:1.6rem;font-weight:900}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:.6rem .5rem;border-bottom:1px solid var(--border)}
+.purchase-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+
+/* FORM */
+.form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem}
+.form-group label{font-size:.8rem;color:var(--gray);text-transform:uppercase;letter-spacing:.05em}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}
+.inp{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--font);font-size:.95rem;padding:.6rem .85rem;width:100%;transition:border-color .2s;outline:none}
+.inp:focus{border-color:var(--gold)}
+.inp option{background:#1a1a1a;color:var(--white)}
+.error-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:8px;padding:.6rem .85rem;font-size:.88rem;margin-top:.5rem}
+.success-msg{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#4ade80;border-radius:8px;padding:.6rem .85rem;font-size:.88rem;margin-top:.5rem}
+
+/* BUTTONS */
+.btn-gold{background:linear-gradient(135deg,#facc15,#eab308,#ca8a04);color:#000;font-family:var(--font);font-weight:700;border:none;border-radius:10px;padding:.65rem 1.35rem;cursor:pointer;font-size:.9rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+.btn-gold:hover{box-shadow:0 0 20px rgba(234,179,8,.4);transform:translateY(-1px)}
+.btn-gold.btn-lg{padding:.85rem 1.8rem;font-size:1rem}
+.btn-gold.btn-xl{padding:1rem 2.5rem;font-size:1.15rem}
+.btn-gold.sm{padding:.35rem .75rem;font-size:.8rem}
+.btn-gold.w-full{width:100%;justify-content:center}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid rgba(234,179,8,.4);font-family:var(--font);font-weight:600;border-radius:10px;padding:.65rem 1.35rem;cursor:pointer;font-size:.9rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+.btn-outline:hover{background:rgba(234,179,8,.1)}
+.btn-outline.btn-lg{padding:.85rem 1.8rem;font-size:1rem}
+.btn-outline.sm{padding:.35rem .75rem;font-size:.8rem}
+.btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;font-family:var(--font);font-weight:600;border-radius:8px;padding:.35rem .75rem;cursor:pointer;font-size:.8rem;transition:all .2s}
+.btn-danger:hover{background:rgba(239,68,68,.3)}
+.btn-back{background:none;border:none;color:var(--gray);cursor:pointer;font-family:var(--font);font-size:.9rem;padding:.3rem 0;transition:color .2s}
+.btn-back:hover{color:var(--gold)}
+.center-msg{text-align:center;padding:4rem;color:var(--gray)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .65rem;border-radius:999px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.badge.red{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+.badge.yellow{background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:var(--gold)}
+.badge.green{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+.badge.gray{background:rgba(156,163,175,.15);border:1px solid rgba(156,163,175,.3);color:var(--gray)}
+
+/* UTILS */
+.gold{background:linear-gradient(90deg,#facc15,#eab308,#ca8a04);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.white{color:var(--white)}
+.gray{color:var(--gray)}
+.red{color:var(--red)}
+.green{color:var(--green)}
+.fw-bold{font-weight:700}
+.fs-lg{font-size:1.2rem}
+.fs-xl{font-size:1.5rem}
+.fs-2xl{font-size:2rem}
+.fs-md{font-size:1rem}
+.small{font-size:.82rem}
+.text-center{text-align:center}
+.text-right{text-align:right}
+.mono{font-family:monospace}
+.hidden{display:none!important}
+.w-full{width:100%}
+.mb-05{margin-bottom:.35rem}
+.mb-1{margin-bottom:1rem}
+.mt-05{margin-top:.35rem}
+.mt-1{margin-top:1rem}
+.my-1{margin:1rem 0}
+.ml-1{margin-left:.5rem}
+.flex-gap{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.flex-col-gap{display:flex;flex-direction:column;gap:.4rem;align-items:flex-start}
+
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:2rem 1.5rem;text-align:center;margin-top:3rem}
+
+@media(max-width:768px){
+  .draw-display{grid-template-columns:1fr}
+  .bingo-cell{width:34px;height:34px;font-size:.7rem}
+  .checkout-grid{grid-template-columns:1fr}
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
-
-<div id="root"></div>
-
-<script type="text/babel">
-// ============================================================
-//  🔥 FIREBASE CONFIG — REEMPLAZA CON TUS CREDENCIALES AQUÍ
-// ============================================================
-const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROJECT.firebaseapp.com",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_PROJECT.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId: "TU_APP_ID"
-};
-// ============================================================
-
-// ============================================================
-//  🔐 CREDENCIALES DE ADMIN (cambiar antes de producción)
-// ============================================================
-const ADMIN_PASSWORD = "admin2025";
-// ============================================================
-
-const { useState, useEffect, useRef, useCallback } = React;
-
-// ─── Firebase helpers (cargados vía módulo ES al inicio) ────
-let db = null;
-let fsLib = null;
-
-async function initFirebase() {
-  // Espera a que el módulo de Firebase esté disponible
-  for (let i = 0; i < 30; i++) {
-    if (window.__firebaseModules) break;
-    await new Promise(r => setTimeout(r, 200));
-  }
-  const { initializeApp, getFirestore } = window.__firebaseModules;
-
-  // Importar funciones de Firestore dinámicamente
-  const firestoreMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-  fsLib = firestoreMod;
-
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  return db;
-}
-
-// ─── Utilidades ─────────────────────────────────────────────
-function generateCard() {
-  // Cartón estándar 5x5 (BINGO): B1-15, I16-30, N31-45, G46-60, O61-75
-  const cols = [
-    { label: 'B', min: 1,  max: 15 },
-    { label: 'I', min: 16, max: 30 },
-    { label: 'N', min: 31, max: 45 },
-    { label: 'G', min: 46, max: 60 },
-    { label: 'O', min: 61, max: 75 },
-  ];
-  return cols.map(({ label, min, max }) => {
-    const pool = [];
-    for (let n = min; n <= max; n++) pool.push(n);
-    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 5);
-    return shuffled.map(n => ({ col: label, num: n }));
-  });
-}
-
-function seudoCardFromId(userId) {
-  // Genera cartón determinístico por userId usando seed
-  let seed = 0;
-  for (let i = 0; i < userId.length; i++) seed = (seed * 31 + userId.charCodeAt(i)) % 100000;
-  const rand = (max) => { seed = (seed * 9301 + 49297) % 233280; return Math.floor((seed / 233280) * max); };
-  const cols = [
-    { label: 'B', min: 1,  max: 15 },
-    { label: 'I', min: 16, max: 30 },
-    { label: 'N', min: 31, max: 45 },
-    { label: 'G', min: 46, max: 60 },
-    { label: 'O', min: 61, max: 75 },
-  ];
-  return cols.map(({ label, min, max }) => {
-    const pool = [];
-    for (let n = min; n <= max; n++) pool.push(n);
-    // Fisher-Yates con seed
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = rand(i + 1);
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    return pool.slice(0, 5).map(n => ({ col: label, num: n }));
-  });
-}
-
-function checkBingo(card, calledSet) {
-  // Construir matriz 5x5 (filas: índice en columna, cols: B,I,N,G,O)
-  // card[colIdx][rowIdx]
-  const SIZE = 5;
-  const isMarked = (col, row) => {
-    if (col === 2 && row === 2) return true; // FREE
-    return calledSet.has(card[col][row].num);
-  };
-
-  // Filas
-  for (let r = 0; r < SIZE; r++) {
-    if ([0,1,2,3,4].every(c => isMarked(c, r))) return true;
-  }
-  // Columnas
-  for (let c = 0; c < SIZE; c++) {
-    if ([0,1,2,3,4].every(r => isMarked(c, r))) return true;
-  }
-  // Diagonal principal
-  if ([0,1,2,3,4].every(i => isMarked(i, i))) return true;
-  // Diagonal inversa
-  if ([0,1,2,3,4].every(i => isMarked(i, 4 - i))) return true;
-
-  return false;
-}
-
-// ─── Componentes ─────────────────────────────────────────────
-
-// HEADER
-function Header({ view, onAdminClick }) {
-  return (
-    <header className="relative z-50 flex items-center justify-between px-5 py-4">
-      <div className="flex items-center gap-2">
-        <span className="text-3xl">🎱</span>
-        <div>
-          <h1 className="font-display text-xl font-black header-logo leading-none">Bol$illo Lleno</h1>
-          <p className="text-xs text-emerald-light font-medium tracking-wider uppercase">Bingo Oficial</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 bg-emerald-light/10 border border-emerald-light/20 rounded-full px-3 py-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-light animate-pulse"></span>
-          <span className="text-xs font-semibold text-emerald-light">EN VIVO</span>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// WINNER OVERLAY
-function WinnerOverlay({ winnerId, onClose }) {
-  return (
-    <div className="winner-overlay" onClick={onClose}>
-      <div className="winner-card" onClick={e => e.stopPropagation()}>
-        <div className="text-6xl mb-4 animate-bounce">🏆</div>
-        <h2 className="font-display text-3xl font-black text-gold-gradient mb-2">¡TENEMOS UN GANADOR!</h2>
-        <p className="text-emerald-light text-sm mb-6 font-medium">La familia Bol$illo Lleno celebra</p>
-        <div className="glass-card p-4 mb-6">
-          <p className="text-xs text-white/50 uppercase tracking-wider mb-1">ID del Ganador</p>
-          <p className="text-2xl font-bold text-gold font-display">{winnerId}</p>
-        </div>
-        <div className="text-4xl mb-6">🎉🎊🎉</div>
-        <button className="btn-gold w-full" onClick={onClose}>¡Celebrar! 🥳</button>
-      </div>
-    </div>
-  );
-}
-
-// LOGIN VIEW
-function LoginView({ onLogin }) {
-  const [userId, setUserId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleLogin = async () => {
-    if (!userId.trim()) { setError('Ingresa tu ID o teléfono'); return; }
-    setLoading(true);
-    setError('');
-    // Login simple: generamos cartón basado en ID
-    setTimeout(() => {
-      onLogin(userId.trim());
-      setLoading(false);
-    }, 800);
-  };
-
-  return (
-    <div className="min-h-screen bg-animated flex flex-col">
-      {/* Background decorative */}
-      <div className="absolute inset-0 confetti-bg pointer-events-none"></div>
-
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pb-20">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="text-7xl mb-4">🎱</div>
-          <h1 className="font-display text-4xl font-black shimmer-text mb-2">Bol$illo Lleno</h1>
-          <p className="text-white/60 text-sm">Familia Bol$illo Lleno te da la bienvenida</p>
-          <div className="mt-3 inline-flex items-center gap-2 bg-emerald-light/10 border border-emerald-light/30 rounded-full px-4 py-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-light animate-pulse"></span>
-            <span className="text-xs font-bold text-emerald-light tracking-wider">TU SUERTE YA ESTÁ ACTIVA</span>
-          </div>
-        </div>
-
-        {/* Login card */}
-        <div className="glass-card p-8 w-full max-w-sm">
-          <h2 className="font-display text-xl font-bold text-gold mb-1 text-center">Activa tu cartón</h2>
-          <p className="text-white/50 text-xs text-center mb-6">Solo los registrados pueden ganar 💰</p>
-
-          <div className="mb-4">
-            <label className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2 block">Tu ID o Teléfono</label>
-            <input
-              className="input-gold"
-              type="text"
-              placeholder="Ej: 3001234567"
-              value={userId}
-              onChange={e => setUserId(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleLogin()}
-              maxLength={20}
-            />
-          </div>
-
-          {error && <p className="text-red-400 text-xs mb-4 text-center">{error}</p>}
-
-          <button className="btn-gold w-full pulse-gold" onClick={handleLogin} disabled={loading}>
-            {loading ? '⏳ Activando...' : '🎯 Entrar al Juego'}
-          </button>
-
-          <p className="text-white/30 text-xs text-center mt-5">
-            ¿Eres admin? Haz login normal y accede al panel desde abajo.
-          </p>
-        </div>
-
-        {/* Neuromarketing copy */}
-        <div className="mt-8 text-center max-w-xs">
-          <p className="text-white/40 text-xs leading-relaxed">
-            🔒 Plazas limitadas · Solo <span className="text-gold font-bold">1 ganador</span> por partida<br/>
-            Únete a la comunidad que ya transforma su vida 💚
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// BINGO CARD COMPONENT
-function BingoCard({ card, calledNumbers, userId, cardInfo }) {
-  const calledSet = new Set(calledNumbers);
-  const cols = ['B', 'I', 'N', 'G', 'O'];
-
-  return (
-    <div className="w-full max-w-sm mx-auto">
-      {/* Card header info */}
-      <div className="flex justify-between items-center mb-3 px-1">
-        <span className="text-xs text-white/50 font-medium">{cardInfo}</span>
-        <span className="text-xs text-gold font-bold">{calledNumbers.length} números cantados</span>
-      </div>
-
-      {/* Column headers */}
-      <div className="grid grid-cols-5 gap-1.5 mb-1.5">
-        {cols.map((c, i) => (
-          <div key={i} className="text-center font-display font-black text-lg" style={{ color: ['#F5C518','#22A870','#FFE57A','#F5C518','#22A870'][i] }}>
-            {c}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-5 gap-1.5">
-        {[0,1,2,3,4].map(row =>
-          [0,1,2,3,4].map(col => {
-            const isCenter = col === 2 && row === 2;
-            const cell = card[col][row];
-            const isCalled = !isCenter && calledSet.has(cell.num);
-            return (
-              <div
-                key={`${row}-${col}`}
-                className={`bingo-cell font-display ${isCalled ? 'called' : ''} ${isCenter ? 'free-space' : ''}`}
-              >
-                {isCenter ? (
-                  <span className="text-lg">⭐</span>
-                ) : (
-                  <>
-                    {cell.num}
-                    {isCalled && <span className="stamp">🔵</span>}
-                  </>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-// USER VIEW
-function UserView({ userId, calledNumbers, gameState, winnerId }) {
-  const card = seudoCardFromId(userId);
-  const calledSet = new Set(calledNumbers);
-  const hasBingo = checkBingo(card, calledSet);
-  const lastNum = calledNumbers[calledNumbers.length - 1];
-  const cols = ['B','I','N','G','O'];
-
-  // Columna del último número
-  const lastCol = lastNum ? cols[Math.floor((lastNum - 1) / 15)] : null;
-
-  return (
-    <div className="min-h-screen bg-animated pb-28">
-      <Header />
-      <div className="relative z-10 px-4 pt-2">
-
-        {/* User greeting */}
-        <div className="glass-card p-4 mb-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center font-bold text-gold">
-            {userId.slice(0,2).toUpperCase()}
-          </div>
-          <div className="flex-1">
-            <p className="font-bold text-sm">{userId}</p>
-            <p className="text-xs text-emerald-light font-medium">✅ Tu suerte ya está activa</p>
-          </div>
-          {hasBingo && (
-            <div className="bg-gold text-dark text-xs font-black px-3 py-1 rounded-full animate-pulse">¡BINGO!</div>
-          )}
-        </div>
-
-        {/* Último número cantado */}
-        {gameState === 'running' || calledNumbers.length > 0 ? (
-          <div className="glass-card p-5 mb-4 text-center">
-            <p className="text-xs text-white/50 uppercase tracking-wider mb-3 font-semibold">Último número</p>
-            {lastNum ? (
-              <div className="flex items-center justify-center gap-3">
-                <div className="number-ball">{lastNum}</div>
-                <div className="text-left">
-                  <p className="font-display text-3xl font-black text-gold">{lastCol}-{lastNum}</p>
-                  <p className="text-xs text-white/50">
-                    {calledSet.has(lastNum) && card.flat().some(c => c.num === lastNum) ? (
-                      <span className="text-emerald-light font-bold">✅ ¡Está en tu cartón!</span>
-                    ) : (
-                      <span className="text-white/40">No está en tu cartón</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-white/40 text-sm">Esperando primer número...</p>
-            )}
-          </div>
-        ) : (
-          <div className="glass-card p-5 mb-4 text-center">
-            <p className="text-3xl mb-2">⏳</p>
-            <p className="font-bold text-white/70">Partida no iniciada</p>
-            <p className="text-xs text-white/40 mt-1">El administrador iniciará pronto</p>
-          </div>
-        )}
-
-        {/* Cartón */}
-        <div className="glass-card p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-gold">Tu Cartón</h3>
-            <span className="text-xs text-white/40">ID: {userId.slice(-4)}</span>
-          </div>
-          <BingoCard
-            card={card}
-            calledNumbers={calledNumbers}
-            userId={userId}
-            cardInfo={`Hoja 1, Cartón #${userId.charCodeAt(0) % 99 + 1}`}
-          />
-        </div>
-
-        {/* Progreso */}
-        <div className="glass-card p-4 mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs text-white/50 font-semibold uppercase tracking-wider">Tu progreso</span>
-            <span className="text-xs text-gold font-bold">
-              {card.flat().filter(c => calledSet.has(c.num)).length + 1}/25
-            </span>
-          </div>
-          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-light to-gold rounded-full transition-all duration-700"
-              style={{ width: `${((card.flat().filter(c => calledSet.has(c.num)).length + 1) / 25) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Motivational */}
-        <div className="text-center py-4">
-          <p className="text-xs text-white/30 italic">
-            "La familia Bol$illo Lleno camina junta hacia la abundancia 💚"
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ADMIN VIEW
-function AdminView({ onLogout }) {
-  const [gameState, setGameState] = useState('idle'); // idle | running | paused | ended
-  const [calledNumbers, setCalledNumbers] = useState([]);
-  const [interval, setIntervalVal] = useState(5);
-  const [loading, setLoading] = useState(false);
-  const [winnerId, setWinnerId] = useState(null);
-  const [dbReady, setDbReady] = useState(false);
-  const [error, setError] = useState('');
-  const timerRef = useRef(null);
-
-  // Estado en tiempo real desde Firestore
-  useEffect(() => {
-    let unsubscribe;
-    const setupListener = async () => {
-      try {
-        if (!db) await initFirebase();
-        setDbReady(true);
-        const { onSnapshot, doc } = fsLib;
-        unsubscribe = onSnapshot(doc(db, 'juego_actual', 'estado'), (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            setGameState(data.estado || 'idle');
-            setCalledNumbers(data.numeros || []);
-            setWinnerId(data.ganador || null);
-          }
-        }, (err) => {
-          console.error('Firestore error:', err);
-          setError('⚠️ Error de conexión con Firebase. Revisa tu configuración.');
-        });
-      } catch (e) {
-        console.error(e);
-        setError('⚠️ Firebase no configurado. Ingresa tus credenciales en el bloque firebaseConfig.');
-      }
-    };
-    setupListener();
-    return () => { if (unsubscribe) unsubscribe(); };
-  }, []);
-
-  // Motor de números automático (solo en admin)
-  useEffect(() => {
-    if (gameState === 'running') {
-      timerRef.current = setInterval(async () => {
-        await drawNumber();
-      }, interval * 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [gameState, interval, calledNumbers]);
-
-  const drawNumber = async () => {
-    if (!db || !fsLib) return;
-    const { doc, updateDoc, arrayUnion } = fsLib;
-
-    // Elegir número no repetido
-    const all = Array.from({ length: 75 }, (_, i) => i + 1);
-    const remaining = all.filter(n => !calledNumbers.includes(n));
-    if (remaining.length === 0) {
-      await endGame();
-      return;
-    }
-    const picked = remaining[Math.floor(Math.random() * remaining.length)];
-    await updateDoc(doc(db, 'juego_actual', 'estado'), {
-      numeros: arrayUnion(picked)
-    });
-  };
-
-  const startGame = async () => {
-    if (!db || !fsLib) { setError('Firebase no inicializado'); return; }
-    setLoading(true);
-    const { doc, setDoc } = fsLib;
-    await setDoc(doc(db, 'juego_actual', 'estado'), {
-      estado: 'running',
-      numeros: [],
-      ganador: null,
-      iniciadoEn: new Date().toISOString(),
-      intervalo: interval,
-    });
-    setCalledNumbers([]);
-    setWinnerId(null);
-    setLoading(false);
-  };
-
-  const pauseGame = async () => {
-    if (!db || !fsLib) return;
-    const { doc, updateDoc } = fsLib;
-    await updateDoc(doc(db, 'juego_actual', 'estado'), { estado: gameState === 'running' ? 'paused' : 'running' });
-  };
-
-  const endGame = async () => {
-    if (!db || !fsLib) return;
-    const { doc, updateDoc } = fsLib;
-    clearInterval(timerRef.current);
-    await updateDoc(doc(db, 'juego_actual', 'estado'), { estado: 'ended' });
-  };
-
-  const declareWinner = async (userId) => {
-    if (!db || !fsLib || !userId) return;
-    const { doc, updateDoc } = fsLib;
-    await updateDoc(doc(db, 'juego_actual', 'estado'), { ganador: userId, estado: 'ended' });
-  };
-
-  const [manualWinnerId, setManualWinnerId] = useState('');
-  const cols = ['B','I','N','G','O'];
-
-  return (
-    <div className="min-h-screen bg-animated pb-20">
-      <Header />
-      <div className="relative z-10 px-4 pt-2">
-
-        {/* Admin badge */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5">
-            <span className="text-gold text-sm">⚙️</span>
-            <span className="text-xs font-bold text-gold uppercase tracking-wider">Panel Administrador</span>
-          </div>
-          <button className="text-xs text-white/40 hover:text-white/70 transition-colors" onClick={onLogout}>
-            Salir →
-          </button>
-        </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4 text-xs text-red-300">
-            {error}
-          </div>
-        )}
-
-        {/* Game status card */}
-        <div className="glass-card p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-lg text-gold">Estado del Juego</h3>
-            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-              gameState === 'running' ? 'bg-emerald-light/20 text-emerald-light' :
-              gameState === 'paused' ? 'bg-yellow-400/20 text-yellow-400' :
-              gameState === 'ended' ? 'bg-red-400/20 text-red-400' :
-              'bg-white/10 text-white/50'
-            }`}>
-              {gameState === 'running' ? '🟢 EN VIVO' :
-               gameState === 'paused' ? '🟡 PAUSADO' :
-               gameState === 'ended' ? '🔴 TERMINADO' : '⚪ INACTIVO'}
-            </span>
-          </div>
-
-          {/* Interval control */}
-          <div className="mb-5">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs font-semibold text-white/60 uppercase tracking-wider">Intervalo entre números</label>
-              <span className="text-gold font-bold text-sm">{interval}s</span>
-            </div>
-            <input
-              type="range" min="3" max="30" value={interval}
-              onChange={e => setIntervalVal(Number(e.target.value))}
-              disabled={gameState === 'running'}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-white/30 mt-1">
-              <span>3s (rápido)</span><span>30s (lento)</span>
-            </div>
-          </div>
-
-          {/* Control buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            {gameState === 'idle' || gameState === 'ended' ? (
-              <button className="btn-gold col-span-2" onClick={startGame} disabled={loading || !dbReady}>
-                {loading ? '⏳ Iniciando...' : '🎮 Iniciar Partida'}
-              </button>
-            ) : (
-              <>
-                <button className="btn-emerald" onClick={pauseGame}>
-                  {gameState === 'running' ? '⏸ Pausar' : '▶️ Reanudar'}
-                </button>
-                <button className="btn-red" onClick={endGame}>🛑 Terminar</button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Last number */}
-        {calledNumbers.length > 0 && (
-          <div className="glass-card p-5 mb-4 text-center">
-            <p className="text-xs text-white/50 uppercase tracking-wider mb-3">Último número cantado</p>
-            <div className="flex items-center justify-center gap-3">
-              <div className="number-ball">
-                {calledNumbers[calledNumbers.length - 1]}
-              </div>
-              <div>
-                <p className="font-display text-3xl font-black text-gold">
-                  {cols[Math.floor((calledNumbers[calledNumbers.length - 1] - 1) / 15)]}-{calledNumbers[calledNumbers.length - 1]}
-                </p>
-                <p className="text-xs text-white/40">{calledNumbers.length} de 75 números</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* History */}
-        {calledNumbers.length > 0 && (
-          <div className="glass-card p-5 mb-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-sm text-gold">Historial de Números</h3>
-              <span className="text-xs text-white/40">{calledNumbers.length} cantados</span>
-            </div>
-            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
-              {[...calledNumbers].reverse().map((n, i) => (
-                <span key={n} className="num-pill" style={{ opacity: i === 0 ? 1 : 0.6 - i * 0.03 }}>
-                  {n}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* BINGO columns visual */}
-        {calledNumbers.length > 0 && (
-          <div className="glass-card p-5 mb-4">
-            <h3 className="font-bold text-sm text-gold mb-3">Distribución BINGO</h3>
-            <div className="grid grid-cols-5 gap-2">
-              {cols.map((col, ci) => {
-                const range = calledNumbers.filter(n => Math.floor((n - 1) / 15) === ci);
-                return (
-                  <div key={col} className="text-center">
-                    <div className="font-display font-black text-sm mb-2" style={{ color: ['#F5C518','#22A870','#FFE57A','#F5C518','#22A870'][ci] }}>{col}</div>
-                    <div className="space-y-1">
-                      {range.slice(-4).map(n => (
-                        <div key={n} className="text-xs bg-gold/10 border border-gold/20 rounded-full py-0.5 font-bold text-gold/80">{n}</div>
-                      ))}
-                    </div>
-                    <div className="text-xs text-white/30 mt-1">{range.length}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Manual winner declaration */}
-        <div className="glass-card p-5 mb-4">
-          <h3 className="font-bold text-sm text-gold mb-3">🏆 Declarar Ganador Manual</h3>
-          <div className="flex gap-2">
-            <input
-              className="input-gold flex-1"
-              placeholder="ID del ganador"
-              value={manualWinnerId}
-              onChange={e => setManualWinnerId(e.target.value)}
-            />
-            <button className="btn-gold px-4 py-2 text-sm" onClick={() => declareWinner(manualWinnerId)}>
-              ✓
-            </button>
-          </div>
-        </div>
-
-        {/* Winner display if any */}
-        {winnerId && (
-          <div className="glass-card p-5 mb-4 border-gold/40" style={{ borderColor: 'rgba(245,197,24,0.4)' }}>
-            <div className="text-center">
-              <div className="text-4xl mb-2">🏆</div>
-              <p className="font-display text-xl font-black text-gold-gradient">¡GANADOR!</p>
-              <p className="text-white font-bold mt-1">{winnerId}</p>
-            </div>
-          </div>
-        )}
-
-        {/* DB status */}
-        <div className="text-center py-2 mb-4">
-          <span className={`text-xs ${dbReady ? 'text-emerald-light' : 'text-yellow-400'}`}>
-            {dbReady ? '🔥 Firebase conectado' : '⚡ Conectando a Firebase...'}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ADMIN LOGIN
-function AdminLogin({ onSuccess, onBack }) {
-  const [pwd, setPwd] = useState('');
-  const [error, setError] = useState('');
-
-  const check = () => {
-    if (pwd === ADMIN_PASSWORD) { onSuccess(); }
-    else { setError('Contraseña incorrecta'); }
-  };
-
-  return (
-    <div className="min-h-screen bg-animated flex flex-col items-center justify-center px-6">
-      <div className="glass-card p-8 w-full max-w-sm">
-        <div className="text-center mb-6">
-          <span className="text-4xl">⚙️</span>
-          <h2 className="font-display text-2xl font-black text-gold mt-2">Acceso Admin</h2>
-          <p className="text-xs text-white/40 mt-1">Solo personal autorizado</p>
-        </div>
-        <input
-          type="password"
-          className="input-gold mb-3"
-          placeholder="Contraseña"
-          value={pwd}
-          onChange={e => setPwd(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && check()}
-        />
-        {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-        <button className="btn-gold w-full mb-3" onClick={check}>Entrar</button>
-        <button className="btn-emerald w-full text-sm" onClick={onBack}>← Volver</button>
-      </div>
-    </div>
-  );
-}
-
-// TAB BAR
-function TabBar({ activeTab, onTabChange }) {
-  return (
-    <div className="tab-bar">
-      <div className="flex justify-around items-center max-w-sm mx-auto">
-        <button
-          className={`flex flex-col items-center gap-1 py-2 px-6 rounded-xl transition-all ${activeTab === 'user' ? 'text-gold' : 'text-white/40'}`}
-          onClick={() => onTabChange('user')}
-        >
-          <span className="text-xl">🎱</span>
-          <span className="text-xs font-semibold">Mi Cartón</span>
-        </button>
-        <button
-          className={`flex flex-col items-center gap-1 py-2 px-6 rounded-xl transition-all ${activeTab === 'admin' ? 'text-gold' : 'text-white/40'}`}
-          onClick={() => onTabChange('admin')}
-        >
-          <span className="text-xl">⚙️</span>
-          <span className="text-xs font-semibold">Admin</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── APP ROOT ────────────────────────────────────────────────
-function App() {
-  const [screen, setScreen] = useState('login');     // login | user | adminLogin | admin
-  const [userId, setUserId] = useState('');
-  const [activeTab, setActiveTab] = useState('user');
-  const [calledNumbers, setCalledNumbers] = useState([]);
-  const [gameState, setGameState] = useState('idle');
-  const [winnerId, setWinnerId] = useState(null);
-  const [showWinner, setShowWinner] = useState(false);
-  const prevWinnerId = useRef(null);
-
-  // Escuchar Firestore en tiempo real (para usuarios también)
-  useEffect(() => {
-    if (screen !== 'user' && screen !== 'admin') return;
-    let unsubscribe;
-    const setup = async () => {
-      try {
-        if (!db) await initFirebase();
-        const { onSnapshot, doc } = fsLib;
-        unsubscribe = onSnapshot(doc(db, 'juego_actual', 'estado'), (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            setCalledNumbers(data.numeros || []);
-            setGameState(data.estado || 'idle');
-            // Detectar ganador nuevo
-            if (data.ganador && data.ganador !== prevWinnerId.current) {
-              prevWinnerId.current = data.ganador;
-              setWinnerId(data.ganador);
-              setShowWinner(true);
-            }
-          }
-        });
-      } catch (e) {
-        console.warn('Firebase listener error:', e);
-      }
-    };
-    setup();
-    return () => { if (unsubscribe) unsubscribe(); };
-  }, [screen]);
-
-  // Auto-detect bingo
-  useEffect(() => {
-    if (!userId || calledNumbers.length === 0) return;
-    const card = seudoCardFromId(userId);
-    const calledSet = new Set(calledNumbers);
-    if (checkBingo(card, calledSet) && !winnerId) {
-      // Notificar ganador automáticamente
-      const notify = async () => {
-        try {
-          if (!db || !fsLib) return;
-          const { doc, updateDoc } = fsLib;
-          await updateDoc(doc(db, 'juego_actual', 'estado'), {
-            ganador: userId,
-            estado: 'ended'
-          });
-        } catch (e) { console.error(e); }
-      };
-      notify();
-    }
-  }, [calledNumbers, userId]);
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    if (tab === 'admin') {
-      setScreen('adminLogin');
-    } else {
-      setScreen('user');
-    }
-  };
-
-  const handleLogin = (id) => {
-    setUserId(id);
-    setScreen('user');
-  };
-
-  const handleAdminAuth = () => {
-    setScreen('admin');
-    setActiveTab('admin');
-  };
-
-  return (
-    <>
-      {/* WINNER OVERLAY */}
-      {showWinner && winnerId && (
-        <WinnerOverlay winnerId={winnerId} onClose={() => setShowWinner(false)} />
-      )}
-
-      {/* SCREENS */}
-      {screen === 'login' && (
-        <LoginView onLogin={handleLogin} />
-      )}
-
-      {screen === 'user' && (
-        <>
-          <UserView
-            userId={userId}
-            calledNumbers={calledNumbers}
-            gameState={gameState}
-            winnerId={winnerId}
-          />
-          <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
-        </>
-      )}
-
-      {screen === 'adminLogin' && (
-        <AdminLogin
-          onSuccess={handleAdminAuth}
-          onBack={() => { setScreen('user'); setActiveTab('user'); }}
-        />
-      )}
-
-      {screen === 'admin' && (
-        <>
-          <AdminView
-            onLogout={() => { setScreen('user'); setActiveTab('user'); }}
-          />
-          <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
-        </>
-      )}
-    </>
-  );
-}
-
-// ─── Mount ───────────────────────────────────────────────────
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
-</script>
+<div id="app">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:1.2rem;color:#eab308">
+    🎱 Cargando Bolsillo Lleno...
+  </div>
+</div>
 </body>
 </html>
