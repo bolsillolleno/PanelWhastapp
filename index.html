@@ -315,8 +315,18 @@ function pgComprar(){
     .filter(d=>d.status==='scheduled'||d.status==='live')
     .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
 
+  const allDraws=Object.entries(S.draws).map(([id,d])=>({id,...d}));
+  const debugInfo=`<div style="background:#1a1000;border:1px solid #eab308;border-radius:8px;padding:.85rem;font-size:.78rem;margin-bottom:1rem;overflow-x:auto">
+    <strong style="color:#eab308">🔍 Debug temporal</strong><br>
+    <span style="color:#9ca3af">Sorteos totales en DB: </span><strong style="color:#fff">${allDraws.length}</strong><br>
+    <span style="color:#9ca3af">Filtrados (scheduled/live): </span><strong style="color:#fff">${draws.length}</strong><br>
+    <span style="color:#9ca3af">Status de cada sorteo: </span><strong style="color:#fff">${allDraws.map(d=>d.name+': '+d.status).join(' | ')||'(vacío)'}</strong><br>
+    <span style="color:#9ca3af">S.draws vacío?: </span><strong style="color:#fff">${Object.keys(S.draws).length===0?'SÍ — no llegan datos':'NO'}</strong>
+  </div>`;
+
   return`<div class="page-wrap">
     <div class="section-title"><h1 class="gold">🛒 Comprar Hojas</h1><p class="gray">Elige tu sorteo y cantidad de hojas</p></div>
+    ${debugInfo}
     ${draws.length===0
       ?`<div class="card glass text-center">
           <div style="font-size:3rem">📋</div>
