@@ -52,7 +52,7 @@ function generateCard(){
     const pool=[...Array(b-a+1)].map((_,i)=>a+i);
     const col=[];
     for(let r=0;r<5;r++){
-      if(r===2&&c===2){col.push(null);continue;}
+      if(r===2&&c===2){col.push(0);continue;}
       const idx=Math.floor(Math.random()*pool.length);
       col.push(pool.splice(idx,1)[0]);
     }
@@ -72,7 +72,7 @@ function drawRandomBall(drawn){
 }
 function checkWin(card,drawn,type){
   const s=new Set(drawn);
-  const m=(c,r)=>{ const v=card[c][r]; return v===null||s.has(v); };
+  const m=(c,r)=>{ const v=card[c][r]; return v===null||v===0||s.has(v); };
   const check=cells=>cells.every(([c,r])=>m(c,r));
   switch(type){
     case'horizontal_line': return [[0,1,2,3,4]].map(r=>r.map(c=>[c,0])).concat(
@@ -405,17 +405,30 @@ function getCountdown(draw){
   if(diff<=0) return null;
   const h=Math.floor(diff/3600000);
   const m=Math.floor((diff%3600000)/60000);
-  const s=Math.floor((diff%60000)/1000);
-  return h>0?`${h}h ${m}m`:`${m}m ${s}s`;
+  return h>0?`${h}h ${m}m`:`${m}m`;
+}
+
+// Actualiza el countdown cada minuto sin re-renderizar todo
+let _countdownInterval=null;
+function startCountdownTick(){
+  if(_countdownInterval) clearInterval(_countdownInterval);
+  _countdownInterval=setInterval(()=>{
+    const el=document.getElementById('tx-countdown-val');
+    if(!el) return;
+    const allDraws=Object.values(S.draws).filter(d=>d.status==='scheduled')
+      .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+    const nd=allDraws[0]||null;
+    if(nd){ const c=getCountdown(nd); if(c) el.textContent=c; }
+  },30000);
 }
 
 function pgPlay(){
   if(!S.isAuthenticated) return`<div class="play-login-wrap">
     <div class="play-login-box">
-      <div class="play-login-icon">🎱</div>
-      <h2 class="gold">Ingresar a la Sala</h2>
-      <p class="gray">Ingresa tu ID de acceso para ver tus cartones</p>
-      <input id="play-acc" type="text" placeholder="BL_1234567890_ABC123" class="inp text-center mono" style="margin:.75rem 0"/>
+      <div style="font-size:3.5rem">🎱</div>
+      <h2 class="gold" style="margin:.5rem 0">Ingresar a la Sala</h2>
+      <p class="gray small">Ingresa tu ID de acceso para ver tus cartones</p>
+      <input id="play-acc" type="text" placeholder="BL_1234567890_ABC123" class="inp text-center mono" style="margin:.85rem 0"/>
       <button class="btn-gold w-full" id="btn-play-login">▶ Ingresar</button>
       <p class="gray small mt-1">Tu ID llegó por WhatsApp al confirmar tu compra.</p>
     </div>
@@ -425,98 +438,102 @@ function pgPlay(){
   const drawn=gs.drawnBalls||[];
   const mySheets=Object.values(S.sheets).filter(sh=>sh.accessId===S.accessId);
   const isLive=gs.currentDrawId&&gs.status!=='waiting';
-
-  // Próximo sorteo para countdown
   const allDraws=Object.values(S.draws).filter(d=>d.status==='scheduled')
     .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
-  const nextDraw=S.currentDraw||allDraws[0]||null;
+  const nextDraw=(!isLive&&allDraws[0])||null;
   const countdown=nextDraw?getCountdown(nextDraw):null;
-
-  // Patrones del sorteo actual
   const patterns=Object.values(S.patterns);
+
+  // Inicia tick del countdown
+  setTimeout(startCountdownTick, 100);
 
   return`<div class="sala-wrap">
 
-    <!-- HEADER -->
+    <!-- HEADER SALA -->
     <div class="sala-header">
       <span class="sala-title">🎱 BOLSILLO LLENO</span>
-      <button class="btn-outline sm" id="btn-play-logout">Salir</button>
+      <button class="sala-salir" id="btn-play-logout">Salir</button>
     </div>
 
-    <!-- TRANSMISIÓN -->
+    <!-- CAJA TRANSMISIÓN -->
     <div class="tx-box ${isLive?'live':''}">
-      ${isLive
-        ? `<div class="tx-live-content">
-            <span class="badge red tx-badge">🔴 TRANSMISIÓN EN VIVO</span>
-            <div class="tx-ball-row">
-              ${gs.currentBall?`<div class="tx-ball" style="background:${getBallColor(gs.currentBall)}">
-                <span class="tx-ball-letter">${getBallLetter(gs.currentBall)}</span>
-                <span class="tx-ball-num">${gs.currentBall}</span>
-              </div>`:'<div class="tx-ball-empty">⏳</div>'}
-              <div class="tx-ball-info">
-                <div class="gray small">Balotas sorteadas</div>
-                <div class="white fw-bold" style="font-size:1.4rem">${drawn.length}<span class="gray" style="font-size:.9rem">/75</span></div>
-                <div class="balls-mini">${drawn.slice(-10).map(b=>`<span class="sball-xs" style="background:${getBallColor(b)}">${b}</span>`).join('')}</div>
-              </div>
+      ${isLive ? `
+        <div class="tx-live-row">
+          <span class="badge red" style="font-size:.7rem">🔴 EN VIVO</span>
+          <span class="gray small">${drawn.length}/75 balotas</span>
+        </div>
+        <div class="tx-live-body">
+          ${gs.currentBall?`
+            <div class="tx-ball" style="background:${getBallColor(gs.currentBall)}">
+              <span class="tx-ball-letter">${getBallLetter(gs.currentBall)}</span>
+              <span class="tx-ball-num">${gs.currentBall}</span>
+            </div>`:
+            `<div class="tx-ball-empty">⏳</div>`}
+          <div class="tx-recent">
+            <div class="gray" style="font-size:.65rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.3rem">Últimas balotas</div>
+            <div class="tx-recent-balls">
+              ${drawn.slice(-12).reverse().map((b,i)=>`<span class="sball-xs ${i===0?'sball-cur':''}" style="background:${getBallColor(b)}">${b}</span>`).join('')}
             </div>
-          </div>`
-        : `<div class="tx-waiting">
-            <div class="tx-play-icon">▶</div>
-            <div class="tx-label">TRANSMISIÓN</div>
-            ${countdown?`
-              <div class="tx-prox">PRÓX. SORTEO</div>
-              <div class="tx-countdown">${countdown}</div>
-              ${nextDraw?`<div class="tx-draw-date">${new Date(nextDraw.date+'T'+nextDraw.time).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}
-              <div class="tx-sub">LA TRANSMISIÓN INICIARÁ PRONTO</div>
-            `:`<div class="tx-sub">Sin sorteos programados</div>`}
-          </div>`}
+          </div>
+        </div>
+      ` : `
+        <div class="tx-waiting">
+          <div class="tx-play-icon">▶</div>
+          <div class="tx-label">TRANSMISIÓN</div>
+          ${countdown?`
+            <div class="tx-prox">PRÓX. SORTEO</div>
+            <div class="tx-countdown" id="tx-countdown-val">${countdown}</div>
+            ${nextDraw?`<div class="tx-draw-date">${new Date(nextDraw.date+'T'+nextDraw.time).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}
+            <div class="tx-sub">LA TRANSMISIÓN INICIARÁ PRONTO</div>
+          `:`<div class="tx-sub" style="margin-top:.5rem">Sin sorteos programados</div>`}
+        </div>
+      `}
     </div>
 
-    <!-- PATRONES -->
-    ${patterns.length?`<div class="pat-scroll">
+    <!-- PATRONES — scroll horizontal -->
+    ${patterns.length?`
+    <div class="pat-scroll">
       ${patterns.map(p=>`<div class="pat-chip">
-        <div class="pat-mini">${renderMiniPattern(p.type)}</div>
-        <div class="gold fw-bold" style="font-size:.75rem">$${Number(p.prize||0).toLocaleString('es-CO')}</div>
-        <div style="font-size:.62rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em">${p.name}</div>
+        <div class="pat-grid">${renderMiniPattern(p.type)}</div>
+        <div style="font-size:.7rem;font-weight:700;color:#eab308">$${Number(p.prize||0).toLocaleString('es-CO')}</div>
+        <div style="font-size:.58rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;text-align:center">${p.name}</div>
       </div>`).join('')}
     </div>`:''}
 
-    <!-- MIS CARTONES -->
+    <!-- MIS HOJAS -->
     <div class="mis-hojas-hdr">
-      <span class="mis-hojas-title">MIS <span class="gold">HOJAS</span></span>
+      <span class="mis-hojas-title">MIS <span style="background:linear-gradient(90deg,#facc15,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent">HOJAS</span></span>
       <span class="mis-hojas-count">${mySheets.length} HOJA${mySheets.length!==1?'S':''} ADQUIRIDA${mySheets.length!==1?'S':''}</span>
     </div>
 
-    ${mySheets.length
-      ? mySheets.map((sh,si)=>`
-        <div class="hoja-section">
-          <div class="hoja-label">HOJA ${si+1}</div>
-          <div class="cards-grid3">
-            ${(sh.cards||[]).map((c,ci)=>renderCard(c,drawn,si,ci)).join('')}
-          </div>
-        </div>`).join('')
-      : `<div class="no-cards-box">
-          <div style="font-size:2.5rem">🔍</div>
-          <div class="gold" style="font-size:.8rem;letter-spacing:.1em;text-transform:uppercase">Consulta tus cartones</div>
-          <p class="gray small">No se encontraron cartones para este ID.<br>Si compraste, espera a que el admin confirme tu pago.</p>
-        </div>`}
+    ${mySheets.length ? mySheets.map((sh,si)=>`
+      <div class="hoja-wrap">
+        <div class="hoja-label">— HOJA ${si+1} —</div>
+        <div class="cards-grid3">
+          ${(sh.cards||[]).map((c,ci)=>renderCard(c,drawn,si,ci)).join('')}
+        </div>
+      </div>`).join('')
+    : `<div class="no-cards-box">
+        <div style="font-size:2.5rem">🔍</div>
+        <div style="color:#eab308;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase">Consulta tus cartones</div>
+        <p class="gray small" style="margin-top:.25rem">No se encontraron cartones para este ID.<br>Si compraste, espera a que el admin confirme tu pago.</p>
+      </div>`}
 
-    <!-- BARRA INFERIOR -->
-    <div style="height:1rem"></div>
+    <div style="height:2rem"></div>
   </div>`;
 }
 
 function renderMiniPattern(type){
   const maps={
     horizontal_line:[[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
-    vertical_line:[[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
-    diagonal:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]],
-    four_corners:[[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]],
-    cross:[[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]],
-    full_card:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
+    vertical_line:  [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+    diagonal:       [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]],
+    four_corners:   [[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]],
+    cross:          [[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]],
+    full_card:      [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
   };
   const grid=maps[type]||maps.full_card;
-  return`<div class="pat-grid">${grid.flat().map(c=>`<div class="pat-dot ${c?'on':''}"></div>`).join('')}</div>`;
+  return grid.flat().map(c=>`<div class="pat-dot ${c?'on':''}"></div>`).join('');
 }
 
 function renderCard(card,drawn,si,ci){
@@ -524,13 +541,14 @@ function renderCard(card,drawn,si,ci){
   const won=['horizontal_line','vertical_line','diagonal','four_corners','cross','full_card']
     .some(t=>checkWin(nums,drawn,t));
   return`<div class="bingo-card ${won?'won':''}">
-    ${won?`<div class="win-banner">🎉 ¡BINGO!</div>`:''}
+    ${won?`<div class="win-banner">🎉 BINGO</div>`:''}
     <div class="bingo-hdr">${['B','I','N','G','O'].map(l=>`<div>${l}</div>`).join('')}</div>
     <div class="bingo-grid">
       ${Array.from({length:5},(_,row)=>Array.from({length:5},(_,col)=>{
         const v=nums[col][row];
-        const mk=v===null||new Set(drawn).has(v);
-        return`<div class="bc ${mk?'mk':''} ${v===null?'fr':''}">${v===null?'★':v}</div>`;
+        const isFree=v===null||v===0;
+        const mk=isFree||new Set(drawn).has(v);
+        return`<div class="bc ${mk?'mk':''} ${isFree?'fr':''}">${isFree?'★':v}</div>`;
       }).join('')).join('')}
     </div>
   </div>`;
@@ -867,8 +885,13 @@ function bind(){
     const accessId=`BL_${Date.now()}_${Math.random().toString(36).substr(2,6).toUpperCase()}`;
     const draw=S.draws[p.drawId];
     if(draw){
-      const sheet=generateSheet(p.drawId,Number(draw.cardsPerSheet||6),pid,accessId);
-      await rtPush('sheets',sheet);
+      const numSheets=Number(p.sheetCount||1);
+      const cps=Number(draw.cardsPerSheet||6);
+      // Generar UNA sheet por cada hoja comprada
+      for(let i=0;i<numSheets;i++){
+        const sheet=generateSheet(p.drawId,cps,pid,accessId);
+        await rtPush('sheets',sheet);
+      }
     }
     await rtUpd('purchases/'+pid,{status:'confirmed',accessId,confirmedAt:Date.now()});
   }));
@@ -1064,67 +1087,67 @@ body{background:var(--bg);color:var(--white);font-family:var(--font);min-height:
 
 /* PLAY — LOGIN */
 .play-login-wrap{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
-.play-login-box{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:2rem;max-width:400px;width:100%;text-align:center;backdrop-filter:blur(8px)}
-.play-login-icon{font-size:3.5rem;margin-bottom:.5rem}
+.play-login-box{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:2rem;max-width:400px;width:100%;text-align:center;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:.5rem}
 
-/* SALA WRAP */
-.sala-wrap{max-width:700px;margin:0 auto;padding:.75rem 1rem 2rem;display:flex;flex-direction:column;gap:.85rem}
-.sala-header{display:flex;justify-content:space-between;align-items:center;padding:.25rem 0}
-.sala-title{font-family:'Black Han Sans',sans-serif;font-size:1.1rem;background:linear-gradient(90deg,#facc15,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+/* SALA */
+.sala-wrap{max-width:760px;margin:0 auto;padding:.6rem .85rem 3rem;display:flex;flex-direction:column;gap:.75rem}
+.sala-header{display:flex;justify-content:space-between;align-items:center}
+.sala-title{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;background:linear-gradient(90deg,#facc15,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sala-salir{background:rgba(255,255,255,.06);border:1px solid var(--brd);border-radius:8px;color:var(--gray);font-family:var(--font);font-size:.8rem;padding:.35rem .75rem;cursor:pointer}
 
 /* TX BOX */
-.tx-box{background:linear-gradient(145deg,#1a1200,#0d0d00);border:1px solid rgba(234,179,8,.25);border-radius:16px;padding:1rem 1.25rem}
-.tx-box.live{border-color:rgba(239,68,68,.5);background:linear-gradient(145deg,#1a0000,#0d0000)}
-.tx-badge{margin-bottom:.5rem}
-.tx-waiting{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.25rem 0}
-.tx-play-icon{width:44px;height:44px;border-radius:50%;border:2px solid rgba(234,179,8,.4);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--gold);margin-bottom:.25rem}
-.tx-label{font-size:.65rem;color:var(--gray);letter-spacing:.15em;text-transform:uppercase}
-.tx-prox{font-size:.65rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase;margin-top:.35rem}
-.tx-countdown{font-family:'Black Han Sans',sans-serif;font-size:2.2rem;color:var(--gold);line-height:1.1}
-.tx-draw-date{font-size:.78rem;color:rgba(234,179,8,.7)}
-.tx-sub{font-size:.62rem;color:var(--gray);letter-spacing:.08em;text-transform:uppercase;margin-top:.1rem}
-.tx-live-content{display:flex;flex-direction:column;gap:.5rem}
-.tx-ball-row{display:flex;align-items:center;gap:1rem}
-.tx-ball{width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 4px 16px rgba(0,0,0,.5),inset 0 2px 6px rgba(255,255,255,.2);flex-shrink:0}
-.tx-ball-letter{font-size:.55rem;letter-spacing:.1em;opacity:.8}
-.tx-ball-num{font-size:1.4rem;line-height:1}
-.tx-ball-empty{width:64px;height:64px;border-radius:50%;border:2px dashed rgba(234,179,8,.3);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
-.tx-ball-info{display:flex;flex-direction:column;gap:.25rem}
-.balls-mini{display:flex;flex-wrap:wrap;gap:3px;max-width:200px}
-.sball-xs{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.58rem;font-weight:700;color:#fff}
+.tx-box{background:linear-gradient(160deg,#181000,#0c0c00);border:1px solid rgba(234,179,8,.2);border-radius:14px;padding:.85rem 1rem}
+.tx-box.live{border-color:rgba(239,68,68,.4);background:linear-gradient(160deg,#180000,#0c0000)}
+.tx-waiting{display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.2rem 0}
+.tx-play-icon{width:40px;height:40px;border-radius:50%;border:2px solid rgba(234,179,8,.35);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--gold);margin-bottom:.2rem}
+.tx-label{font-size:.6rem;color:var(--gray);letter-spacing:.15em;text-transform:uppercase}
+.tx-prox{font-size:.6rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase;margin-top:.3rem}
+.tx-countdown{font-family:'Black Han Sans',sans-serif;font-size:2.4rem;color:var(--gold);line-height:1.05}
+.tx-draw-date{font-size:.75rem;color:rgba(234,179,8,.65)}
+.tx-sub{font-size:.6rem;color:var(--gray);letter-spacing:.06em;text-transform:uppercase}
+.tx-live-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.tx-live-body{display:flex;align-items:center;gap:.85rem}
+.tx-ball{width:60px;height:60px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 3px 14px rgba(0,0,0,.5),inset 0 2px 5px rgba(255,255,255,.18);flex-shrink:0}
+.tx-ball-letter{font-size:.52rem;letter-spacing:.1em;opacity:.8;text-transform:uppercase}
+.tx-ball-num{font-size:1.35rem;line-height:1}
+.tx-ball-empty{width:60px;height:60px;border-radius:50%;border:2px dashed rgba(234,179,8,.25);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.tx-recent{flex:1;min-width:0}
+.tx-recent-balls{display:flex;flex-wrap:wrap;gap:3px;margin-top:.2rem}
+.sball-xs{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;font-size:.56rem;font-weight:700;color:#fff}
+.sball-cur{outline:2px solid #fff;outline-offset:1px}
 
 /* PATRONES */
-.pat-scroll{display:flex;gap:.6rem;overflow-x:auto;padding:.25rem 0;scrollbar-width:none}
+.pat-scroll{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:none}
 .pat-scroll::-webkit-scrollbar{display:none}
-.pat-chip{background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:10px;padding:.6rem .75rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;flex-shrink:0;min-width:72px}
-.pat-grid{display:grid;grid-template-columns:repeat(5,8px);gap:2px}
-.pat-dot{width:8px;height:8px;border-radius:2px;background:rgba(255,255,255,.1)}
+.pat-chip{background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:10px;padding:.55rem .65rem;display:flex;flex-direction:column;align-items:center;gap:.28rem;flex-shrink:0;cursor:default}
+.pat-grid{display:grid;grid-template-columns:repeat(5,7px);gap:2px}
+.pat-dot{width:7px;height:7px;border-radius:1.5px;background:rgba(255,255,255,.1)}
 .pat-dot.on{background:var(--gold)}
 
 /* MIS HOJAS */
-.mis-hojas-hdr{display:flex;justify-content:space-between;align-items:center}
-.mis-hojas-title{font-family:'Black Han Sans',sans-serif;font-size:1rem;color:var(--white)}
-.mis-hojas-count{font-size:.72rem;color:var(--gray);background:rgba(255,255,255,.06);border:1px solid var(--brd);border-radius:999px;padding:.2rem .65rem}
-.hoja-section{display:flex;flex-direction:column;gap:.5rem}
-.hoja-label{font-size:.7rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase}
+.mis-hojas-hdr{display:flex;justify-content:space-between;align-items:center;margin-top:.25rem}
+.mis-hojas-title{font-family:'Black Han Sans',sans-serif;font-size:.95rem;color:var(--white)}
+.mis-hojas-count{font-size:.7rem;color:var(--gray);background:rgba(255,255,255,.05);border:1px solid var(--brd);border-radius:999px;padding:.18rem .6rem}
+.hoja-wrap{display:flex;flex-direction:column;gap:.4rem}
+.hoja-label{font-size:.65rem;color:rgba(234,179,8,.5);letter-spacing:.12em;text-transform:uppercase;text-align:center}
 
-/* CARTONES — 3 por fila vertical, 4+ en horizontal */
-.cards-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
-@media(min-width:540px){.cards-grid3{grid-template-columns:repeat(4,1fr)}}
-@media(orientation:landscape){.cards-grid3{grid-template-columns:repeat(5,1fr)}}
+/* CARTONES — 3 col vertical, más en landscape */
+.cards-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+@media(min-width:520px){.cards-grid3{grid-template-columns:repeat(4,1fr)}}
+@media(orientation:landscape) and (max-height:600px){.cards-grid3{grid-template-columns:repeat(5,1fr)}}
 
-/* BINGO CARD — compacto para caber 3 en pantalla */
-.bingo-card{border:1.5px solid var(--brd);border-radius:10px;padding:.35rem;position:relative;background:rgba(0,0,0,.5);transition:border-color .3s}
-.bingo-card.won{border-color:var(--gold);background:rgba(234,179,8,.06);box-shadow:0 0 20px rgba(234,179,8,.2)}
-.win-banner{position:absolute;top:0;left:50%;transform:translate(-50%,-50%);background:var(--gold);color:#000;font-weight:900;font-size:.58rem;padding:.15rem .5rem;border-radius:999px;white-space:nowrap;z-index:2}
-.bingo-hdr{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:2px;text-align:center;font-weight:900;font-size:.6rem;color:var(--gold)}
-.bingo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
-.bc{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:all .25s}
-.bc.mk{background:rgba(234,179,8,.28);border-color:rgba(234,179,8,.55);color:var(--gold2)}
-.bc.fr{background:rgba(234,179,8,.15);color:var(--gold);font-size:.75rem}
+/* BINGO CARD */
+.bingo-card{border:1.5px solid rgba(234,179,8,.15);border-radius:9px;padding:.3rem;position:relative;background:rgba(10,8,0,.7);transition:border-color .3s,box-shadow .3s}
+.bingo-card.won{border-color:var(--gold);background:rgba(234,179,8,.07);box-shadow:0 0 18px rgba(234,179,8,.25)}
+.win-banner{position:absolute;top:-1px;left:50%;transform:translate(-50%,-50%);background:var(--gold);color:#000;font-weight:900;font-size:.56rem;padding:.12rem .5rem;border-radius:999px;white-space:nowrap;z-index:2;letter-spacing:.03em}
+.bingo-hdr{display:grid;grid-template-columns:repeat(5,1fr);gap:1.5px;margin-bottom:1.5px;text-align:center;font-weight:900;font-size:.58rem;color:var(--gold);letter-spacing:.05em}
+.bingo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1.5px}
+.bc{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);transition:background .2s,border-color .2s}
+.bc.mk{background:rgba(234,179,8,.3);border-color:rgba(234,179,8,.6);color:#facc15;font-weight:700}
+.bc.fr{background:rgba(234,179,8,.12);color:var(--gold);font-size:.7rem}
 
 /* NO CARDS */
-.no-cards-box{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.no-cards-box{background:rgba(255,255,255,.02);border:1px solid var(--brd);border-radius:var(--r);padding:2rem 1.5rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.5rem}
 
 /* BALLS */
 .big-ball{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 2px 8px rgba(255,255,255,.2)}
