@@ -315,18 +315,10 @@ function pgComprar(){
     .filter(d=>d.status==='scheduled'||d.status==='live')
     .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
 
-  const allDraws=Object.entries(S.draws).map(([id,d])=>({id,...d}));
-  const debugInfo=`<div style="background:#1a1000;border:1px solid #eab308;border-radius:8px;padding:.85rem;font-size:.78rem;margin-bottom:1rem;overflow-x:auto">
-    <strong style="color:#eab308">🔍 Debug temporal</strong><br>
-    <span style="color:#9ca3af">Sorteos totales en DB: </span><strong style="color:#fff">${allDraws.length}</strong><br>
-    <span style="color:#9ca3af">Filtrados (scheduled/live): </span><strong style="color:#fff">${draws.length}</strong><br>
-    <span style="color:#9ca3af">Status de cada sorteo: </span><strong style="color:#fff">${allDraws.map(d=>d.name+': '+d.status).join(' | ')||'(vacío)'}</strong><br>
-    <span style="color:#9ca3af">S.draws vacío?: </span><strong style="color:#fff">${Object.keys(S.draws).length===0?'SÍ — no llegan datos':'NO'}</strong>
-  </div>`;
+
 
   return`<div class="page-wrap">
     <div class="section-title"><h1 class="gold">🛒 Comprar Hojas</h1><p class="gray">Elige tu sorteo y cantidad de hojas</p></div>
-    ${debugInfo}
     ${draws.length===0
       ?`<div class="card glass text-center">
           <div style="font-size:3rem">📋</div>
@@ -406,56 +398,125 @@ function pgCheckout(){
 }
 
 // ─── PLAY ────────────────────────────────────────────────────────────────────
+function getCountdown(draw){
+  if(!draw||!draw.date||!draw.time) return null;
+  const target=new Date(draw.date+'T'+draw.time);
+  const diff=target-Date.now();
+  if(diff<=0) return null;
+  const h=Math.floor(diff/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  return h>0?`${h}h ${m}m`:`${m}m ${s}s`;
+}
+
 function pgPlay(){
-  if(!S.isAuthenticated) return`<div class="page-wrap narrow flex-center">
-    <div class="card glass text-center" style="max-width:420px;width:100%">
-      <div style="font-size:4rem">🎱</div>
+  if(!S.isAuthenticated) return`<div class="play-login-wrap">
+    <div class="play-login-box">
+      <div class="play-login-icon">🎱</div>
       <h2 class="gold">Ingresar a la Sala</h2>
       <p class="gray">Ingresa tu ID de acceso para ver tus cartones</p>
-      <div class="fg"><label>ID de Acceso</label><input id="play-acc" type="text" placeholder="BL_1234567890_ABC123" class="inp text-center mono"/></div>
+      <input id="play-acc" type="text" placeholder="BL_1234567890_ABC123" class="inp text-center mono" style="margin:.75rem 0"/>
       <button class="btn-gold w-full" id="btn-play-login">▶ Ingresar</button>
-      <p class="gray small mt-1">Tu ID fue enviado por WhatsApp al confirmar tu compra.</p>
+      <p class="gray small mt-1">Tu ID llegó por WhatsApp al confirmar tu compra.</p>
     </div>
   </div>`;
 
   const gs=S.gameState;
   const drawn=gs.drawnBalls||[];
   const mySheets=Object.values(S.sheets).filter(sh=>sh.accessId===S.accessId);
+  const isLive=gs.currentDrawId&&gs.status!=='waiting';
 
-  return`<div class="page-wrap">
-    <div class="play-header">
-      <div><h1 class="gold">🎱 Sala de Juego</h1><p class="gray small mono">${S.accessId}</p></div>
+  // Próximo sorteo para countdown
+  const allDraws=Object.values(S.draws).filter(d=>d.status==='scheduled')
+    .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+  const nextDraw=S.currentDraw||allDraws[0]||null;
+  const countdown=nextDraw?getCountdown(nextDraw):null;
+
+  // Patrones del sorteo actual
+  const patterns=Object.values(S.patterns);
+
+  return`<div class="sala-wrap">
+
+    <!-- HEADER -->
+    <div class="sala-header">
+      <span class="sala-title">🎱 BOLSILLO LLENO</span>
       <button class="btn-outline sm" id="btn-play-logout">Salir</button>
     </div>
 
-    ${gs.status==='waiting'||!gs.currentDrawId
-      ?`<div class="card glass text-center"><div style="font-size:3rem">⏳</div><h3 class="white">Esperando sorteo...</h3><p class="gray">El juego comenzará pronto.</p></div>`
-      :`<div class="live-bar">
-          <span class="badge ${gs.status==='drawing'?'red':gs.status==='paused'?'yellow':'gray'}">
-            ${gs.status==='drawing'?'🔴 EN VIVO':gs.status==='paused'?'⏸ PAUSADO':'⏹ FINALIZADO'}
-          </span>
-          ${gs.currentBall?`<div class="big-ball sm" style="background:${getBallColor(gs.currentBall)}">
-            <span class="ball-letter">${getBallLetter(gs.currentBall)}</span>
-            <span>${gs.currentBall}</span>
-          </div>`:''}
-          <span class="gray small">${drawn.length}/75 balotas</span>
-        </div>`}
+    <!-- TRANSMISIÓN -->
+    <div class="tx-box ${isLive?'live':''}">
+      ${isLive
+        ? `<div class="tx-live-content">
+            <span class="badge red tx-badge">🔴 TRANSMISIÓN EN VIVO</span>
+            <div class="tx-ball-row">
+              ${gs.currentBall?`<div class="tx-ball" style="background:${getBallColor(gs.currentBall)}">
+                <span class="tx-ball-letter">${getBallLetter(gs.currentBall)}</span>
+                <span class="tx-ball-num">${gs.currentBall}</span>
+              </div>`:'<div class="tx-ball-empty">⏳</div>'}
+              <div class="tx-ball-info">
+                <div class="gray small">Balotas sorteadas</div>
+                <div class="white fw-bold" style="font-size:1.4rem">${drawn.length}<span class="gray" style="font-size:.9rem">/75</span></div>
+                <div class="balls-mini">${drawn.slice(-10).map(b=>`<span class="sball-xs" style="background:${getBallColor(b)}">${b}</span>`).join('')}</div>
+              </div>
+            </div>
+          </div>`
+        : `<div class="tx-waiting">
+            <div class="tx-play-icon">▶</div>
+            <div class="tx-label">TRANSMISIÓN</div>
+            ${countdown?`
+              <div class="tx-prox">PRÓX. SORTEO</div>
+              <div class="tx-countdown">${countdown}</div>
+              ${nextDraw?`<div class="tx-draw-date">${new Date(nextDraw.date+'T'+nextDraw.time).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}
+              <div class="tx-sub">LA TRANSMISIÓN INICIARÁ PRONTO</div>
+            `:`<div class="tx-sub">Sin sorteos programados</div>`}
+          </div>`}
+    </div>
 
-    ${drawn.length?`<div class="card glass">
-      <div class="gray small mb-05">Balotas sorteadas</div>
-      <div class="balls-grid">${drawn.map(b=>`<span class="sball" style="background:${getBallColor(b)}">${b}</span>`).join('')}</div>
+    <!-- PATRONES -->
+    ${patterns.length?`<div class="pat-scroll">
+      ${patterns.map(p=>`<div class="pat-chip">
+        <div class="pat-mini">${renderMiniPattern(p.type)}</div>
+        <div class="gold fw-bold" style="font-size:.75rem">$${Number(p.prize||0).toLocaleString('es-CO')}</div>
+        <div style="font-size:.62rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em">${p.name}</div>
+      </div>`).join('')}
     </div>`:''}
 
+    <!-- MIS CARTONES -->
+    <div class="mis-hojas-hdr">
+      <span class="mis-hojas-title">MIS <span class="gold">HOJAS</span></span>
+      <span class="mis-hojas-count">${mySheets.length} HOJA${mySheets.length!==1?'S':''} ADQUIRIDA${mySheets.length!==1?'S':''}</span>
+    </div>
+
     ${mySheets.length
-      ? mySheets.map((sh,si)=>`<div class="mb-1">
-          <h3 class="white">Hoja ${si+1}</h3>
-          <div class="cards-row">${(sh.cards||[]).map((c,ci)=>renderCard(c,drawn,si,ci)).join('')}</div>
+      ? mySheets.map((sh,si)=>`
+        <div class="hoja-section">
+          <div class="hoja-label">HOJA ${si+1}</div>
+          <div class="cards-grid3">
+            ${(sh.cards||[]).map((c,ci)=>renderCard(c,drawn,si,ci)).join('')}
+          </div>
         </div>`).join('')
-      : `<div class="card glass text-center">
-          <p class="gray">No se encontraron cartones para este ID.</p>
-          <p class="gray small">Si acabas de comprar, espera a que el admin confirme tu pago.</p>
+      : `<div class="no-cards-box">
+          <div style="font-size:2.5rem">🔍</div>
+          <div class="gold" style="font-size:.8rem;letter-spacing:.1em;text-transform:uppercase">Consulta tus cartones</div>
+          <p class="gray small">No se encontraron cartones para este ID.<br>Si compraste, espera a que el admin confirme tu pago.</p>
         </div>`}
+
+    <!-- BARRA INFERIOR -->
+    <div style="height:1rem"></div>
   </div>`;
+}
+
+function renderMiniPattern(type){
+  const maps={
+    horizontal_line:[[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+    vertical_line:[[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+    diagonal:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]],
+    four_corners:[[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]],
+    cross:[[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]],
+    full_card:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
+  };
+  const grid=maps[type]||maps.full_card;
+  return`<div class="pat-grid">${grid.flat().map(c=>`<div class="pat-dot ${c?'on':''}"></div>`).join('')}</div>`;
 }
 
 function renderCard(card,drawn,si,ci){
@@ -1001,20 +1062,69 @@ body{background:var(--bg);color:var(--white);font-family:var(--font);min-height:
 .sr.total{font-weight:700;border-bottom:none;padding-top:.75rem}
 @media(max-width:640px){.checkout-grid{grid-template-columns:1fr}}
 
-/* PLAY */
-.play-header{display:flex;justify-content:space-between;align-items:center}
-.live-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:var(--r);padding:.85rem 1.25rem}
-.cards-row{display:flex;flex-wrap:wrap;gap:1rem}
+/* PLAY — LOGIN */
+.play-login-wrap{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.play-login-box{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:2rem;max-width:400px;width:100%;text-align:center;backdrop-filter:blur(8px)}
+.play-login-icon{font-size:3.5rem;margin-bottom:.5rem}
 
-/* BINGO CARD */
-.bingo-card{border:2px solid var(--brd);border-radius:12px;padding:.75rem;position:relative;background:rgba(0,0,0,.4);transition:border-color .3s}
-.bingo-card.won{border-color:var(--gold);background:rgba(234,179,8,.05);box-shadow:0 0 30px rgba(234,179,8,.2)}
-.win-banner{position:absolute;top:0;left:50%;transform:translate(-50%,-50%);background:var(--gold);color:#000;font-weight:900;font-size:.72rem;padding:.2rem .7rem;border-radius:999px;white-space:nowrap;z-index:2}
-.bingo-hdr{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:3px;text-align:center;font-weight:900;font-size:.8rem;color:var(--gold)}
-.bingo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
-.bc{width:40px;height:40px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);transition:all .3s}
-.bc.mk{background:rgba(234,179,8,.22);border-color:rgba(234,179,8,.5);color:var(--gold2)}
-.bc.fr{background:rgba(234,179,8,.12);color:var(--gold);font-size:1rem}
+/* SALA WRAP */
+.sala-wrap{max-width:700px;margin:0 auto;padding:.75rem 1rem 2rem;display:flex;flex-direction:column;gap:.85rem}
+.sala-header{display:flex;justify-content:space-between;align-items:center;padding:.25rem 0}
+.sala-title{font-family:'Black Han Sans',sans-serif;font-size:1.1rem;background:linear-gradient(90deg,#facc15,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* TX BOX */
+.tx-box{background:linear-gradient(145deg,#1a1200,#0d0d00);border:1px solid rgba(234,179,8,.25);border-radius:16px;padding:1rem 1.25rem}
+.tx-box.live{border-color:rgba(239,68,68,.5);background:linear-gradient(145deg,#1a0000,#0d0000)}
+.tx-badge{margin-bottom:.5rem}
+.tx-waiting{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.25rem 0}
+.tx-play-icon{width:44px;height:44px;border-radius:50%;border:2px solid rgba(234,179,8,.4);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--gold);margin-bottom:.25rem}
+.tx-label{font-size:.65rem;color:var(--gray);letter-spacing:.15em;text-transform:uppercase}
+.tx-prox{font-size:.65rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase;margin-top:.35rem}
+.tx-countdown{font-family:'Black Han Sans',sans-serif;font-size:2.2rem;color:var(--gold);line-height:1.1}
+.tx-draw-date{font-size:.78rem;color:rgba(234,179,8,.7)}
+.tx-sub{font-size:.62rem;color:var(--gray);letter-spacing:.08em;text-transform:uppercase;margin-top:.1rem}
+.tx-live-content{display:flex;flex-direction:column;gap:.5rem}
+.tx-ball-row{display:flex;align-items:center;gap:1rem}
+.tx-ball{width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 4px 16px rgba(0,0,0,.5),inset 0 2px 6px rgba(255,255,255,.2);flex-shrink:0}
+.tx-ball-letter{font-size:.55rem;letter-spacing:.1em;opacity:.8}
+.tx-ball-num{font-size:1.4rem;line-height:1}
+.tx-ball-empty{width:64px;height:64px;border-radius:50%;border:2px dashed rgba(234,179,8,.3);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+.tx-ball-info{display:flex;flex-direction:column;gap:.25rem}
+.balls-mini{display:flex;flex-wrap:wrap;gap:3px;max-width:200px}
+.sball-xs{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.58rem;font-weight:700;color:#fff}
+
+/* PATRONES */
+.pat-scroll{display:flex;gap:.6rem;overflow-x:auto;padding:.25rem 0;scrollbar-width:none}
+.pat-scroll::-webkit-scrollbar{display:none}
+.pat-chip{background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:10px;padding:.6rem .75rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;flex-shrink:0;min-width:72px}
+.pat-grid{display:grid;grid-template-columns:repeat(5,8px);gap:2px}
+.pat-dot{width:8px;height:8px;border-radius:2px;background:rgba(255,255,255,.1)}
+.pat-dot.on{background:var(--gold)}
+
+/* MIS HOJAS */
+.mis-hojas-hdr{display:flex;justify-content:space-between;align-items:center}
+.mis-hojas-title{font-family:'Black Han Sans',sans-serif;font-size:1rem;color:var(--white)}
+.mis-hojas-count{font-size:.72rem;color:var(--gray);background:rgba(255,255,255,.06);border:1px solid var(--brd);border-radius:999px;padding:.2rem .65rem}
+.hoja-section{display:flex;flex-direction:column;gap:.5rem}
+.hoja-label{font-size:.7rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase}
+
+/* CARTONES — 3 por fila vertical, 4+ en horizontal */
+.cards-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
+@media(min-width:540px){.cards-grid3{grid-template-columns:repeat(4,1fr)}}
+@media(orientation:landscape){.cards-grid3{grid-template-columns:repeat(5,1fr)}}
+
+/* BINGO CARD — compacto para caber 3 en pantalla */
+.bingo-card{border:1.5px solid var(--brd);border-radius:10px;padding:.35rem;position:relative;background:rgba(0,0,0,.5);transition:border-color .3s}
+.bingo-card.won{border-color:var(--gold);background:rgba(234,179,8,.06);box-shadow:0 0 20px rgba(234,179,8,.2)}
+.win-banner{position:absolute;top:0;left:50%;transform:translate(-50%,-50%);background:var(--gold);color:#000;font-weight:900;font-size:.58rem;padding:.15rem .5rem;border-radius:999px;white-space:nowrap;z-index:2}
+.bingo-hdr{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:2px;text-align:center;font-weight:900;font-size:.6rem;color:var(--gold)}
+.bingo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.bc{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:all .25s}
+.bc.mk{background:rgba(234,179,8,.28);border-color:rgba(234,179,8,.55);color:var(--gold2)}
+.bc.fr{background:rgba(234,179,8,.15);color:var(--gold);font-size:.75rem}
+
+/* NO CARDS */
+.no-cards-box{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.5rem}
 
 /* BALLS */
 .big-ball{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 2px 8px rgba(255,255,255,.2)}
@@ -1082,7 +1192,6 @@ body{background:var(--bg);color:var(--white);font-family:var(--font);min-height:
 
 @media(max-width:768px){
   .draw-display{grid-template-columns:1fr}
-  .bc{width:34px;height:34px;font-size:.7rem}
 }
 </style>
 </head>
