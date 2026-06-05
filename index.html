@@ -3,1224 +3,1455 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bolsillo Lleno – Bingo Online</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+<title>Bol$illo Lleno – Bingo Online</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07070e;--bg2:#0d0d18;--bg3:#131320;
+  --card:rgba(255,255,255,0.035);--border:rgba(255,255,255,0.07);
+  --gold:#f0b429;--gold2:#fcd34d;--gold3:#b45309;
+  --white:#f1f0ed;--gray:#8b8fa8;--dim:#3d4060;
+  --green:#10b981;--red:#f43f5e;--blue:#6366f1;--yellow:#f59e0b;
+  --r:10px;--rsm:6px;--rlg:16px;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--white);font-family:'Syne',sans-serif;line-height:1.55}
+button{cursor:pointer;font-family:'Syne',sans-serif;border:none;outline:none}
+input,select,textarea{font-family:'Syne',sans-serif}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
 
+/* ── NAVBAR ── */
+.navbar{position:sticky;top:0;z-index:100;height:58px;background:rgba(7,7,14,0.97);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center}
+.nav-inner{width:100%;max-width:1200px;margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.logo-btn{background:none;border:none;cursor:pointer;padding:0}
+.logo-text{font-family:'Space Mono',monospace;font-size:1.05rem;font-weight:700;color:var(--gold);letter-spacing:.02em}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-link{background:none;border:none;padding:5px 12px;border-radius:var(--rsm);color:var(--gray);font-size:.82rem;font-weight:600;transition:all .15s;white-space:nowrap}
+.nav-link:hover{color:var(--white)}
+.nav-link.active{color:var(--gold);background:rgba(240,180,41,.08)}
+
+/* ── LAYOUT ── */
+.main{min-height:calc(100vh - 58px)}
+.pw{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+.pw.narrow{max-width:720px}
+.pw.wide{max-width:1200px}
+.section{max-width:1200px;margin:0 auto;padding:4rem 1.5rem}
+.stitle{text-align:center;margin-bottom:3rem}
+.stitle h2{font-size:1.85rem;font-weight:800;margin-bottom:.4rem}
+.stitle p{color:var(--gray);font-size:.9rem}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:1.5rem}
+.card.gl{background:rgba(255,255,255,.025);backdrop-filter:blur(8px)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;padding:.55rem 1.1rem;border-radius:var(--rsm);font-weight:700;font-size:.82rem;transition:all .15s;border:none;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif}
+.btn-g{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000}
+.btn-g:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 18px rgba(240,180,41,.3)}
+.btn-g:active{transform:none;filter:none}
+.btn-o{background:transparent;border:1px solid var(--border);color:var(--white)}
+.btn-o:hover{border-color:var(--gold);color:var(--gold)}
+.btn-r{background:var(--red);color:#fff}
+.btn-r:hover{filter:brightness(1.1)}
+.btn-gr{background:var(--green);color:#000;font-weight:800}
+.btn-gr:hover{filter:brightness(1.1)}
+.btn-gy{background:rgba(255,255,255,.08);color:var(--white)}
+.btn-gy:hover{background:rgba(255,255,255,.13)}
+.btn-sm{padding:.3rem .75rem;font-size:.76rem}
+.btn-lg{padding:.72rem 1.6rem;font-size:.9rem}
+.btn-xl{padding:.9rem 2.2rem;font-size:1rem;border-radius:var(--r)}
+.btn-full{width:100%;justify-content:center}
+.btn-back{background:none;border:none;color:var(--dim);font-size:.82rem;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem;cursor:pointer;transition:color .15s;font-family:'Syne',sans-serif;font-weight:600}
+.btn-back:hover{color:var(--white)}
+
+/* ── INPUTS ── */
+.inp{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:var(--rsm);padding:.6rem .85rem;color:var(--white);font-size:.85rem;width:100%;transition:all .15s;font-family:'Syne',sans-serif}
+.inp:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.07)}
+.inp::placeholder{color:var(--dim)}
+select.inp option{background:var(--bg2);color:var(--white)}
+.inp-pre{display:flex}
+.inp-pre .pre{background:rgba(255,255,255,.07);border:1px solid var(--border);border-right:none;border-radius:var(--rsm) 0 0 var(--rsm);padding:0 .85rem;display:flex;align-items:center;color:var(--gray);font-size:.85rem;white-space:nowrap;font-family:'Space Mono',monospace;font-weight:700}
+.inp-pre input{border-radius:0 var(--rsm) var(--rsm) 0;flex:1}
+label,.lbl{display:block;font-size:.78rem;color:var(--gray);margin-bottom:.3rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.fg{margin-bottom:.9rem}
+.fgrow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.fgrow{grid-template-columns:1fr}}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:999px;font-size:.72rem;font-weight:700;font-family:'Space Mono',monospace}
+.b-red{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+.b-yel{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.b-grn{background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.b-gy{background:rgba(255,255,255,.05);color:var(--gray);border:1px solid var(--border)}
+.b-blu{background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2)}
+
+/* ── UTILS ── */
+.gold{color:var(--gold)}.white{color:var(--white)}.gray{color:var(--gray)}.grn{color:var(--green)}.red{color:var(--red)}
+.sm{font-size:.8rem}.xs{font-size:.72rem}
+.fw6{font-weight:600}.fw7{font-weight:700}.fw8{font-weight:800}.fw9{font-weight:900}
+.tc{text-align:center}.tr{text-align:right}
+.mb05{margin-bottom:.5rem}.mb1{margin-bottom:1rem}.mb15{margin-bottom:1.5rem}.mb2{margin-bottom:2rem}
+.mt05{margin-top:.5rem}.mt1{margin-top:1rem}.mt2{margin-top:2rem}
+.w-full{width:100%}
+.flex{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}
+.flex-b{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.vlist{display:flex;flex-direction:column;gap:.85rem}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}.g5{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.g4,.g3,.g2,.g5{grid-template-columns:1fr}}
+.sep{height:1px;background:var(--border);margin:1.25rem 0}
+.loading{text-align:center;padding:4rem;color:var(--gray);font-size:1rem}
+.empty{text-align:center;padding:2.5rem;color:var(--gray)}
+.hidden{display:none!important}
+.rel{position:relative}
+
+/* ── HERO ── */
+.hero{padding:5rem 1.5rem 4rem;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(240,180,41,.06),transparent)}
+.hero-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 40% 30% at 20% 80%,rgba(99,102,241,.04),transparent)}
+.hero-inner{max-width:660px;margin:0 auto;text-align:center;position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.2);border-radius:999px;color:var(--gold);font-size:.75rem;font-weight:700;margin-bottom:1.5rem;font-family:'Space Mono',monospace;letter-spacing:.04em}
+.hero-title{font-size:3rem;font-weight:800;line-height:1.08;letter-spacing:-.03em;margin-bottom:1rem}
+.hero-title .dim{color:var(--gray);font-weight:400}
+.hero-sub{color:var(--gray);font-size:.95rem;max-width:460px;margin:0 auto 2rem}
+.hero-btns{display:flex;gap:.85rem;justify-content:center;flex-wrap:wrap;margin-bottom:2.5rem}
+.hero-stats{display:flex;align-items:center;justify-content:center;gap:2rem;flex-wrap:wrap}
+.hstat{text-align:center}
+.hstat-n{font-size:1.6rem;font-weight:800;color:var(--gold);font-family:'Space Mono',monospace}
+.hstat-l{font-size:.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.hstat-sep{width:1px;height:32px;background:var(--border)}
+@media(max-width:600px){.hero-title{font-size:2rem}}
+
+/* ── MINI BOARD ── */
+.mini-board{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;width:66px;margin:.65rem auto 0}
+.mini-cell{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.05)}
+.mini-cell.on{background:var(--gold)}
+
+/* ── DRAW CARD ── */
+.draw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+.price-tag{text-align:right;flex-shrink:0}
+.qty-row{display:flex;align-items:center;gap:.65rem;margin:.5rem 0;flex-wrap:wrap}
+.qty-btn{width:28px;height:28px;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:5px;color:var(--white);font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .15s;font-family:'Space Mono',monospace}
+.qty-btn:hover{background:rgba(255,255,255,.13)}
+.qty-val{font-weight:700;min-width:20px;text-align:center;font-family:'Space Mono',monospace}
+
+/* ── CHECKOUT ── */
+.co-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem}
+@media(max-width:660px){.co-grid{grid-template-columns:1fr}}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid var(--border)}
+.sr:last-child{border:none}
+.sr-total{padding-top:.85rem;margin-top:.5rem;border-top:1px solid var(--border)}
+
+/* ── BINGO CARD ── */
+.bc-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.bc-wrap.wglow{border-color:var(--gold)!important;box-shadow:0 0 22px rgba(240,180,41,.2)}
+.bc-cn{font-size:.68rem;color:var(--dim);text-align:right;padding:3px 7px;font-weight:700;letter-spacing:.04em;font-family:'Space Mono',monospace}
+.bc-hdrs{display:grid;grid-template-columns:repeat(5,1fr)}
+.bc-h{padding:4px;text-align:center;font-weight:800;font-size:.82rem;font-family:'Space Mono',monospace}
+.bc-h.B{background:rgba(59,130,246,.18);color:#60a5fa}
+.bc-h.I{background:rgba(244,63,94,.18);color:#fb7185}
+.bc-h.N{background:rgba(148,163,184,.18);color:#cbd5e1}
+.bc-h.G{background:rgba(16,185,129,.18);color:#34d399}
+.bc-h.O{background:rgba(240,180,41,.18);color:#fcd34d}
+.bc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:2px;background:rgba(0,0,0,.3)}
+.bc-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;background:var(--bg3);border-radius:3px;transition:all .2s;font-family:'Space Mono',monospace}
+.bc-cell.fhi{box-shadow:inset 0 0 0 2px var(--gold)}
+.bc-cell.hit.B{background:#3b82f6;color:#fff}
+.bc-cell.hit.I{background:#f43f5e;color:#fff}
+.bc-cell.hit.N{background:#475569;color:#fff}
+.bc-cell.hit.G{background:#10b981;color:#000}
+.bc-cell.hit.O{background:#f0b429;color:#000}
+.bc-cell.ctr{background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.25)}
+.bc-cell.ctr .cn{font-size:.6rem;font-weight:800;color:var(--gold);font-family:'Space Mono',monospace}
+
+/* ── FIGURE CREATOR ── */
+.fec-grid{display:inline-grid;grid-template-columns:repeat(5,56px);gap:4px}
+.fec-hdr{height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;border-radius:5px;font-family:'Space Mono',monospace}
+.fec-hdr.B{background:rgba(59,130,246,.15);color:#60a5fa}
+.fec-hdr.I{background:rgba(244,63,94,.15);color:#fb7185}
+.fec-hdr.N{background:rgba(148,163,184,.15);color:#cbd5e1}
+.fec-hdr.G{background:rgba(16,185,129,.15);color:#34d399}
+.fec-hdr.O{background:rgba(240,180,41,.15);color:#fcd34d}
+.fec-cell{width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:rgba(255,255,255,.05);border:2px solid transparent;cursor:pointer;transition:all .12s;font-size:.68rem;font-weight:700;font-family:'Space Mono',monospace}
+.fec-cell:hover:not(.fec-ctr){background:rgba(255,255,255,.1);border-color:rgba(240,180,41,.35)}
+.fec-cell.fec-on{background:rgba(240,180,41,.18);border-color:var(--gold);color:var(--gold)}
+.fec-cell.fec-ctr{background:rgba(240,180,41,.07);border-color:rgba(240,180,41,.18);cursor:not-allowed;color:var(--gold)}
+
+/* ── FIGURE SLOTS ── */
+.fig-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:.85rem}
+@media(max-width:700px){.fig-slots{grid-template-columns:repeat(2,1fr)}}
+.fig-slot{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.9rem;text-align:center;cursor:pointer;transition:all .18s}
+.fig-slot:hover{border-color:rgba(240,180,41,.3);transform:translateY(-2px)}
+.fig-slot.has-fig{border-color:rgba(240,180,41,.18);background:rgba(240,180,41,.025)}
+.fig-slot.ae{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,180,41,.12)}
+.fs-ord{font-size:.66rem;color:var(--dim);font-weight:700;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.06em;font-family:'Space Mono',monospace}
+.fs-name{font-size:.78rem;font-weight:700;color:var(--white);margin-top:.35rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fs-prize{font-size:.78rem;font-weight:700;color:var(--gold);font-family:'Space Mono',monospace}
+.fig-mini{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;width:42px;margin:.4rem auto;aspect-ratio:1}
+.fmc{border-radius:1px;background:rgba(255,255,255,.06);aspect-ratio:1}
+.fmc.on{background:var(--gold)}
+
+/* ── TRANSMISSION ── */
+.tx{min-height:calc(100vh - 58px);display:flex;flex-direction:column;background:var(--bg)}
+
+/* waiting */
+.tx-wait{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+
+/* announcing */
+.tx-ann{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:2rem;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(240,180,41,.05),transparent);animation:fadeIn .5s ease}
+.tx-ann-ord{font-size:.72rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);font-family:'Space Mono',monospace}
+.tx-ann-name{font-size:2.4rem;font-weight:800;color:var(--white);line-height:1.1;text-align:center}
+.tx-ann-prize{font-size:3rem;font-weight:800;color:var(--gold);font-family:'Space Mono',monospace;line-height:1}
+.tx-ann-card{max-width:260px;width:100%}
+.tx-ann-sub{color:var(--dim);font-size:.82rem}
+
+/* playing */
+.tx-play{flex:1;display:grid;grid-template-columns:190px 1fr 210px;gap:1rem;padding:1.25rem;align-items:start}
+@media(max-width:860px){.tx-play{grid-template-columns:1fr;padding:1rem}}
+.tx-left,.tx-right{display:flex;flex-direction:column;gap:.85rem}
+.tx-fig-lbl{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-family:'Space Mono',monospace}
+.tx-prize-box{background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.18);border-radius:var(--r);padding:.65rem;text-align:center}
+.tx-prize-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:.2rem;font-weight:700}
+.tx-prize-amt{font-size:1.3rem;font-weight:800;color:var(--gold);font-family:'Space Mono',monospace}
+.tx-center{display:flex;flex-direction:column;gap:.85rem;min-width:0}
+.tx-ball-hist{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
+.chip{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;flex-shrink:0;font-family:'Space Mono',monospace}
+.chip.B{background:#3b82f6;color:#fff}
+.chip.I{background:#f43f5e;color:#fff}
+.chip.N{background:#475569;color:#fff}
+.chip.G{background:#10b981;color:#000}
+.chip.O{background:#f0b429;color:#000}
+.tx-right{align-items:center;justify-content:center}
+.tx-bigball{width:148px;height:148px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:ballPop .4s ease}
+.tx-bigball .bl{font-size:.85rem;font-weight:700;opacity:.85;font-family:'Space Mono',monospace}
+.tx-bigball .bn{font-size:3rem;font-weight:800;line-height:1;font-family:'Space Mono',monospace}
+.tx-count{font-size:.75rem;color:var(--dim);text-align:center;font-family:'Space Mono',monospace}
+
+/* winner */
+.tx-win{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(240,180,41,.07),transparent);animation:fadeIn .5s ease}
+.tx-w-ic{font-size:4rem;animation:bounce .7s ease infinite alternate;margin-bottom:.5rem}
+.tx-w-ttl{font-size:1.9rem;font-weight:800;color:var(--gold);margin-bottom:.25rem}
+.tx-w-cn{font-size:3.8rem;font-weight:800;color:var(--white);line-height:1;margin-bottom:.2rem;font-family:'Space Mono',monospace}
+.tx-w-nm{font-size:1.2rem;color:var(--gray);margin-bottom:.4rem}
+.tx-w-pr{font-size:2.8rem;font-weight:800;color:var(--gold);font-family:'Space Mono',monospace}
+.tx-w-fi{font-size:.82rem;color:var(--dim);margin-bottom:1.5rem}
+
+/* finished */
+.tx-fin{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+
+/* ── ADMIN ── */
+.adm-wrap{max-width:1200px;margin:0 auto;padding:1.5rem}
+.atabs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:1.5rem;padding-bottom:.65rem;border-bottom:1px solid var(--border)}
+.atab{background:none;border:none;padding:5px 13px;border-radius:var(--rsm);color:var(--gray);font-size:.8rem;font-weight:700;transition:all .15s;font-family:'Syne',sans-serif}
+.atab:hover{color:var(--white)}
+.atab.active{color:var(--gold);background:rgba(240,180,41,.08)}
+.a-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;gap:1rem;flex-wrap:wrap}
+.a-hdr h2{font-size:1.25rem;font-weight:800}
+
+/* stat cards */
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem;margin-bottom:1.5rem}
+@media(max-width:800px){.stat-cards{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.stat-v{font-size:1.8rem;font-weight:800;margin-bottom:.15rem;font-family:'Space Mono',monospace;color:var(--gold)}
+.stat-l{font-size:.72rem;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+
+/* table */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;padding:.65rem .9rem;color:var(--dim);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+td{padding:.65rem .9rem;border-bottom:1px solid rgba(255,255,255,.025);vertical-align:middle}
+tr:last-child td{border:none}
+tr:hover td{background:rgba(255,255,255,.012)}
+.td-acts{display:flex;gap:.4rem;align-items:center}
+
+/* PLAY PAGE */
+.play-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.25rem;padding:1.5rem}
+
+/* NOTIF */
+.notif{position:fixed;bottom:1.25rem;right:1.25rem;padding:.75rem 1.1rem;border-radius:var(--r);font-weight:700;font-size:.82rem;z-index:999;box-shadow:0 4px 24px rgba(0,0,0,.4);animation:slideUp .3s ease;pointer-events:none;font-family:'Space Mono',monospace;max-width:320px}
+.notif.ok{background:#052e16;border:1px solid rgba(16,185,129,.4);color:#34d399}
+.notif.err{background:#4c0519;border:1px solid rgba(244,63,94,.4);color:#fb7185}
+.notif.inf{background:#1e1b4b;border:1px solid rgba(99,102,241,.4);color:#818cf8}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:2rem 1.5rem;text-align:center;color:var(--dim);font-size:.76rem;font-family:'Space Mono',monospace}
+
+/* WINNER ROW */
+.win-row{display:flex;justify-content:space-between;align-items:center;padding:.65rem .9rem;background:rgba(240,180,41,.04);border:1px solid rgba(240,180,41,.1);border-radius:var(--rsm);margin-bottom:.4rem}
+
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+@keyframes ballPop{0%{transform:scale(.3);opacity:0}65%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+</style>
+</head>
+<body>
+<div id="app"></div>
 <script type="module">
-import { initializeApp }      from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
-import { getDatabase, ref, onValue, set, update, push, remove, get }
-  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
+import{initializeApp}from'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+import{getDatabase,ref,onValue,set,update,push,remove,runTransaction}from'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
 
-// ─── Config ────────────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyA2_BKI_kA3QdmXFEV08Pd3Vu2yWgJ15hU",
-  authDomain: "bolsillolleno-5d1f8.firebaseapp.com",
-  databaseURL: "https://bolsillolleno-5d1f8-default-rtdb.firebaseio.com",
-  projectId: "bolsillolleno-5d1f8",
-  storageBucket: "bolsillolleno-5d1f8.firebasestorage.app",
-  messagingSenderId: "589773139731",
-  appId: "1:589773139731:web:ab6495056a3697b752f4e6"
+/* ═══════════════════════════════════════════════ CONFIG */
+const FB={apiKey:"AIzaSyA2_BKI_kA3QdmXFEV08Pd3Vu2yWgJ15hU",authDomain:"bolsillolleno-5d1f8.firebaseapp.com",databaseURL:"https://bolsillolleno-5d1f8-default-rtdb.firebaseio.com",projectId:"bolsillolleno-5d1f8",storageBucket:"bolsillolleno-5d1f8.firebasestorage.app",messagingSenderId:"589773139731",appId:"1:589773139731:web:ab6495056a3697b752f4e6"};
+const ADMIN_UID='QpdUwY7avJf8WhZ9N7ZIdd4ZUZA3';
+const app=initializeApp(FB);
+const auth=getAuth(app);
+const db=getDatabase(app);
+
+/* ═══════════════════════════════════════════════ CONSTANTS */
+const COLS=['B','I','N','G','O'];
+const RANGES=[[1,15],[16,30],[31,45],[46,60],[61,75]];
+const BCOLORS={B:'#3b82f6',I:'#f43f5e',N:'#475569',G:'#10b981',O:'#f0b429'};
+const CTR=12; // center index in flat 25-cell array (row=2,col=2 → 2*5+2=12)
+
+/* ═══════════════════════════════════════════════ STATE */
+const S={
+  page:'home',user:null,isAdmin:false,
+  draws:{},purchases:{},sheets:{},winners:{},
+  gs:{status:'waiting',currentDrawId:null,currentFigureIndex:0,currentBall:null,drawnBalls:[],currentWinner:null},
+  settings:{whatsappNumber:'573001234567',bankAccount:'',bankName:'',accountHolder:'',pricePerSheet:5000,cardsPerSheet:6},
+  adminTab:'dashboard',
+  adminSelDraw:null,
+  figEd:{idx:null,cells:Array(25).fill(false),name:'',prize:''},
+  checkoutDraw:null,checkoutSheets:1,qty:{},
+  playerPhone:'',
 };
-const ADMIN_UID = 'QpdUwY7avJf8WhZ9N7ZIdd4ZUZA3';
 
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getDatabase(app);
+/* ═══════════════════════════════════════════════ FIREBASE */
+const fr=p=>ref(db,p);
+const rtSet=async(p,v)=>set(fr(p),v);
+const rtUpd=async(p,v)=>update(fr(p),v);
+const rtPush=async(p,v)=>{const r=await push(fr(p),v);return r.key};
+const rtDel=async p=>remove(fr(p));
 
-// ─── Helpers RTDB ──────────────────────────────────────────────────────────
-// Convierte objeto {id1:{...}, id2:{...}} en array [{id:'id1',...}, ...]
-const toArr = (snap) => {
-  if(!snap.exists()) return [];
-  return Object.entries(snap.val()).map(([id,v])=>({id,...v}));
-};
+function initListeners(){
+  onValue(fr('draws'),s=>{S.draws=s.exists()?s.val():{};render()});
+  onValue(fr('purchases'),s=>{S.purchases=s.exists()?s.val():{};render()});
+  onValue(fr('sheets'),s=>{S.sheets=s.exists()?s.val():{};render()});
+  onValue(fr('winners'),s=>{S.winners=s.exists()?s.val():{};render()});
+  onValue(fr('gameState'),s=>{if(s.exists())S.gs={...S.gs,...s.val()};render()});
+  onValue(fr('settings'),s=>{if(s.exists())S.settings={...S.settings,...s.val()};render()});
+}
 
-// ─── Bingo engine ──────────────────────────────────────────────────────────
-const RANGES = {B:[1,15],I:[16,30],N:[31,45],G:[46,60],O:[61,75]};
-const LETTERS = ['B','I','N','G','O'];
-
-function getBallLetter(n){ if(n<=15)return'B';if(n<=30)return'I';if(n<=45)return'N';if(n<=60)return'G';return'O'; }
-function getBallColor(n){  if(n<=15)return'#3b82f6';if(n<=30)return'#ef4444';if(n<=45)return'#9ca3af';if(n<=60)return'#22c55e';return'#eab308'; }
-
-function randRange(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
-function generateCard(){
+/* ═══════════════════════════════════════════════ BINGO ENGINE */
+// card[col][row], center = card[2][2] = cardNumber (special, always marked)
+function genCard(cardNumber){
   const card=[];
-  for(let c=0;c<5;c++){
-    const [a,b]=Object.values(RANGES)[c];
-    const pool=[...Array(b-a+1)].map((_,i)=>a+i);
-    const col=[];
-    for(let r=0;r<5;r++){
-      if(r===2&&c===2){col.push(0);continue;}
+  for(let col=0;col<5;col++){
+    const[a,b]=RANGES[col];
+    const pool=[];for(let i=a;i<=b;i++)pool.push(i);
+    const col_arr=[];
+    for(let row=0;row<5;row++){
+      if(col===2&&row===2){col_arr.push(cardNumber);continue}
       const idx=Math.floor(Math.random()*pool.length);
-      col.push(pool.splice(idx,1)[0]);
+      col_arr.push(pool.splice(idx,1)[0]);
     }
-    card.push(col);
+    card.push(col_arr);
   }
   return card;
 }
-function generateSheet(drawId,cardsPerSheet,purchaseId,accessId){
-  const cards=[];
-  for(let i=0;i<cardsPerSheet;i++) cards.push({numbers:generateCard()});
-  return{drawId,cards,purchaseId,accessId,createdAt:Date.now()};
+
+// figureCells: flat 25-bool array, index=row*5+col
+// card[col][row]. Center (col=2,row=2) is always considered marked.
+function checkWin(card,drawn,figureCells){
+  if(!figureCells)return false;
+  const cells=toArr(figureCells);
+  const s=new Set(drawn);
+  for(let i=0;i<25;i++){
+    if(!cells[i])continue;
+    const col=i%5,row=Math.floor(i/5);
+    if(col===2&&row===2)continue; // center always marked
+    if(!s.has(card[col]?.[row]))return false;
+  }
+  return true;
 }
-function drawRandomBall(drawn){
-  const rem=Array.from({length:75},(_,i)=>i+1).filter(b=>!drawn.includes(b));
-  if(!rem.length)throw new Error('Todas las balotas sorteadas');
+
+function randBall(drawn){
+  const rem=[];for(let i=1;i<=75;i++)if(!drawn.includes(i))rem.push(i);
+  if(!rem.length)throw new Error('¡Todas las 75 balotas han sido sorteadas!');
   return rem[Math.floor(Math.random()*rem.length)];
 }
-function checkWin(card,drawn,type){
-  const s=new Set(drawn);
-  const m=(c,r)=>{ const v=card[c][r]; return v===null||v===0||s.has(v); };
-  const check=cells=>cells.every(([c,r])=>m(c,r));
-  switch(type){
-    case'horizontal_line': return [[0,1,2,3,4]].map(r=>r.map(c=>[c,0])).concat(
-      [0,1,2,3,4].map(r=>[[0,r],[1,r],[2,r],[3,r],[4,r]])).some(check);
-    case'vertical_line':   return [0,1,2,3,4].map(c=>[[c,0],[c,1],[c,2],[c,3],[c,4]]).some(check);
-    case'diagonal':        return check([[0,0],[1,1],[2,2],[3,3],[4,4]])||check([[4,0],[3,1],[2,2],[1,3],[0,4]]);
-    case'four_corners':    return check([[0,0],[4,0],[0,4],[4,4]]);
-    case'cross':           return check([[2,0],[2,1],[2,2],[2,3],[2,4],[0,2],[1,2],[3,2],[4,2]]);
-    case'full_card':       for(let c=0;c<5;c++)for(let r=0;r<5;r++)if(!m(c,r))return false;return true;
-    default: return false;
+
+function letter(n){if(n<=15)return'B';if(n<=30)return'I';if(n<=45)return'N';if(n<=60)return'G';return'O'}
+function color(n){return BCOLORS[letter(n)]}
+function toArr(v){if(!v)return[];if(Array.isArray(v))return v;return Object.values(v)}
+function fmtCOP(n){return'$'+Number(n||0).toLocaleString('es-CO')}
+
+/* ═══════════════════════════════════════════════ ADMIN ACTIONS */
+async function confirmPurchase(pid){
+  const p=S.purchases[pid];
+  if(!p||p.status!=='pending'){notify('Esta compra ya fue procesada','inf');return}
+  const draw=S.draws[p.drawId];
+  if(!draw){notify('Sorteo no encontrado','err');return}
+  const numSheets=Number(p.quantity||1);
+  const cps=Number(draw.cardsPerSheet||6);
+  let ss,cs; // sheetStart, cardStart
+  try{
+    await runTransaction(fr(`draws/${p.drawId}/counters`),cur=>{
+      const c=cur||{ns:1,nc:1};
+      ss=c.ns;cs=c.nc;
+      return{ns:c.ns+numSheets,nc:c.nc+numSheets*cps};
+    });
+    const upd={
+      [`purchases/${pid}/status`]:'confirmed',
+      [`purchases/${pid}/sheetStart`]:ss,
+      [`purchases/${pid}/cardStart`]:cs,
+    };
+    for(let s=0;s<numSheets;s++){
+      const shN=ss+s;
+      const cards=[];
+      for(let c=0;c<cps;c++){
+        const cN=cs+s*cps+c;
+        cards.push({cardNumber:cN,numbers:genCard(cN)});
+      }
+      upd[`sheets/${p.drawId}_${shN}`]={drawId:p.drawId,sheetNumber:shN,purchaseId:pid,customerName:p.customerName,phone:p.phone,cards,confirmedAt:Date.now()};
+    }
+    await update(fr('/'),upd);
+    const lbl=numSheets>1?`Hojas #${ss} al #${ss+numSheets-1}`:`Hoja #${ss}`;
+    notify(`✓ ${lbl} asignadas a ${p.customerName}`,'ok');
+  }catch(e){notify('Error: '+e.message,'err')}
+}
+
+async function rejectPurchase(pid){
+  if(!confirm('¿Rechazar esta compra?'))return;
+  await rtUpd(`purchases/${pid}`,{status:'rejected'});
+  notify('Compra rechazada','inf');
+}
+
+async function createDraw(data){
+  await rtPush('draws',{...data,status:'scheduled',counters:{ns:1,nc:1},figures:{},createdAt:Date.now()});
+  notify('Sorteo creado ✓','ok');
+}
+
+async function deleteDraw(id){
+  if(!confirm('¿Eliminar este sorteo?'))return;
+  await rtDel(`draws/${id}`);
+  notify('Sorteo eliminado','inf');
+}
+
+async function saveFigure(drawId,idx,name,prize,cells){
+  await rtSet(`draws/${drawId}/figures/${idx}`,{name,prize:Number(prize),order:idx,cells:[...cells]});
+  S.figEd={idx:null,cells:Array(25).fill(false),name:'',prize:''};
+  notify(`Figura ${idx+1} guardada ✓`,'ok');
+}
+
+/* ── TRANSMISSION CONTROLS ── */
+async function txInit(drawId){
+  await rtSet('gameState',{status:'waiting',currentDrawId:drawId,currentFigureIndex:0,currentBall:null,drawnBalls:[],currentWinner:null});
+  await rtUpd(`draws/${drawId}`,{status:'live'});
+}
+
+async function txAnnounce(){
+  const gs=S.gs;
+  const fig=S.draws[gs.currentDrawId]?.figures?.[gs.currentFigureIndex];
+  if(!fig){notify('Configura la figura antes de anunciar','err');return}
+  await rtUpd('gameState',{status:'announcing_figure'});
+}
+
+async function txStartPlay(){
+  await rtUpd('gameState',{status:'playing'});
+}
+
+async function txDraw(){
+  const gs=S.gs;
+  if(gs.status!=='playing')return;
+  const drawn=toArr(gs.drawnBalls);
+  try{
+    const ball=randBall(drawn);
+    const newDrawn=[...drawn,ball];
+    await rtUpd('gameState',{currentBall:ball,drawnBalls:newDrawn});
+    await checkAllWins(gs.currentDrawId,gs.currentFigureIndex,newDrawn);
+  }catch(e){
+    await rtUpd('gameState',{status:'no_winner'});
+    notify(e.message,'inf');
   }
 }
 
-// ─── Estado ────────────────────────────────────────────────────────────────
-const S={
-  page:'home', user:null, isAdmin:false,
-  draws:{}, purchases:{}, patterns:{}, winners:{}, sheets:{},
-  gameState:{status:'waiting',currentDrawId:null,currentBall:null,drawnBalls:[],ballSpeed:5},
-  settings:{whatsappNumber:'573001234567',bankAccount:'',bankName:'',accountHolder:'',pricePerSheet:4000,cardsPerSheet:6},
-  loaded:{draws:false,purchases:false},
-  accessId:'', isAuthenticated:false,
-  adminTab:'dashboard',
-  checkoutDraw:null, checkoutSheets:1,
-  qty:{},
-};
-
-// ─── RTDB listeners ────────────────────────────────────────────────────────
-function initListeners(){
-  // Sorteos — lectura pública (regla ".read": true en /sorteos, usamos /draws)
-  onValue(ref(db,'draws'), snap=>{
-    S.draws = snap.exists() ? snap.val() : {};
-    S.loaded.draws=true;
-    render();
-  });
-  onValue(ref(db,'purchases'), snap=>{
-    S.purchases = snap.exists() ? snap.val() : {};
-    S.loaded.purchases=true;
-    render();
-  });
-  onValue(ref(db,'patterns'), snap=>{ S.patterns=snap.exists()?snap.val():{}; render(); });
-  onValue(ref(db,'winners'),  snap=>{ S.winners =snap.exists()?snap.val():{};  render(); });
-  onValue(ref(db,'sheets'),   snap=>{ S.sheets  =snap.exists()?snap.val():{};  render(); });
-  onValue(ref(db,'gameState'),snap=>{
-    if(snap.exists()) S.gameState={...S.gameState,...snap.val()};
-    render();
-  });
-  onValue(ref(db,'settings'), snap=>{ if(snap.exists()) S.settings={...S.settings,...snap.val()}; render(); });
+async function checkAllWins(drawId,figIdx,drawn){
+  const draw=S.draws[drawId];
+  if(!draw?.figures)return;
+  const fig=draw.figures[figIdx];
+  if(!fig)return;
+  const cells=toArr(fig.cells);
+  for(const[shId,sh]of Object.entries(S.sheets)){
+    if(sh.drawId!==drawId)continue;
+    const cards=toArr(sh.cards);
+    for(const card of cards){
+      const nums=toArr(card.numbers);
+      if(checkWin(nums,drawn,cells)){
+        await rtUpd('gameState',{
+          status:'winner_found',
+          currentWinner:{cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,customerName:sh.customerName,phone:sh.phone,prize:fig.prize,figureName:fig.name,figureIndex:figIdx}
+        });
+        await rtPush('winners',{drawId,drawName:draw.name,cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,customerName:sh.customerName,prize:fig.prize,figureName:fig.name,figureIndex:figIdx,ballsDrawn:drawn.length,createdAt:Date.now()});
+        return;
+      }
+    }
+  }
 }
 
-async function rtSet(path,val){  await set(ref(db,path),val); }
-async function rtUpd(path,val){  await update(ref(db,path),val); }
-async function rtPush(path,val){ const r=await push(ref(db,path),val); return r.key; }
-async function rtDel(path){      await remove(ref(db,path)); }
-
-// ─── Auth ───────────────────────────────────────────────────────────────────
-onAuthStateChanged(auth, u=>{
-  S.user=u; S.isAdmin=!!(u&&u.uid===ADMIN_UID); render();
-});
-
-// ─── Nav ────────────────────────────────────────────────────────────────────
-function nav(page){
-  S.page=page; window.scrollTo(0,0); render();
+async function txNext(){
+  const gs=S.gs;
+  const nextIdx=(gs.currentFigureIndex||0)+1;
+  const draw=S.draws[gs.currentDrawId];
+  if(!draw)return;
+  if(nextIdx>=10||!draw.figures?.[nextIdx]){
+    await txFinish(); return;
+  }
+  await rtUpd('gameState',{status:'announcing_figure',currentFigureIndex:nextIdx,currentBall:null,drawnBalls:[],currentWinner:null});
 }
 
-// ─── Render ─────────────────────────────────────────────────────────────────
+async function txFinish(){
+  const gs=S.gs;
+  await rtUpd('gameState',{status:'finished'});
+  if(gs.currentDrawId) await rtUpd(`draws/${gs.currentDrawId}`,{status:'finished'});
+}
+
+async function txReset(){
+  await rtSet('gameState',{status:'waiting',currentDrawId:null,currentFigureIndex:0,currentBall:null,drawnBalls:[],currentWinner:null});
+}
+
+/* ═══════════════════════════════════════════════ AUTH */
+onAuthStateChanged(auth,u=>{S.user=u;S.isAdmin=!!(u&&u.uid===ADMIN_UID);render()});
+
+/* ═══════════════════════════════════════════════ HELPERS */
+function nav(p){S.page=p;window.scrollTo(0,0);render()}
+
+function notify(msg,type='ok'){
+  const d=document.createElement('div');
+  d.className='notif '+type;d.textContent=msg;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),3400);
+}
+
+/* ═══════════════════════════════════════════════ RENDER */
 function render(){
-  document.getElementById('app').innerHTML=
-    renderNav()+'<main class="main">'+renderPage()+'</main>'+renderFooter();
+  document.getElementById('app').innerHTML=renderNav()+'<main class="main">'+renderPage()+'</main>'+renderFooter();
   bind();
 }
 
-// ─── NAVBAR ─────────────────────────────────────────────────────────────────
 function renderNav(){
-  const links=[['home','Inicio'],['sala','Sala'],['comprar','Comprar'],['play','Jugar']];
+  const links=[['home','Inicio'],['sala','Sala'],['comprar','Comprar'],['play','Mis Cartones']];
   return`<nav class="navbar"><div class="nav-inner">
-    <button class="logo-btn" data-nav="home"><span class="logo-text">🎱 BOLSILLO LLENO</span></button>
+    <button class="logo-btn" data-nav="home"><span class="logo-text">🎱 BOL$ILLO LLENO</span></button>
     <div class="nav-links">
-      ${links.map(([p,l])=>`<button class="nav-link ${S.page===p?'active':''}" data-nav="${p}">${l}</button>`).join('')}
-      ${S.isAdmin?`<button class="nav-link ${S.page==='admin'?'active':''}" data-nav="admin">Admin</button>`:''}
-      ${S.user
-        ?`<button class="nav-link" id="btn-logout">Salir</button>`
-        :`<button class="nav-link" data-nav="login">Admin</button>`}
+      ${links.map(([p,l])=>`<button class="nav-link${S.page===p?' active':''}" data-nav="${p}">${l}</button>`).join('')}
+      ${S.isAdmin?`<button class="nav-link${S.page==='admin'?' active':''}" data-nav="admin">⚙ Admin</button>`:''}
+      ${S.user?`<button class="nav-link" id="btn-logout">Salir</button>`:`<button class="nav-link" data-nav="login">Admin</button>`}
     </div>
   </div></nav>`;
 }
-
-// ─── PAGES ──────────────────────────────────────────────────────────────────
+function renderFooter(){return`<footer><p>© 2025 Bol$illo Lleno · Bingo Online en Vivo</p></footer>`}
 function renderPage(){
   switch(S.page){
-    case'home':     return pgHome();
-    case'sala':     return pgSala();
-    case'comprar':  return pgComprar();
-    case'checkout': return pgCheckout();
-    case'play':     return pgPlay();
-    case'login':    return pgLogin();
-    case'admin':    return S.isAdmin?pgAdmin():'<p class="center-msg">No autorizado</p>';
-    default:        return pgHome();
+    case'home':return pgHome();
+    case'sala':return pgSala();
+    case'comprar':return pgComprar();
+    case'checkout':return pgCheckout();
+    case'play':return pgPlay();
+    case'login':return pgLogin();
+    case'admin':return S.isAdmin?pgAdmin():`<div class="loading">No autorizado.</div>`;
+    default:return pgHome();
   }
 }
 
-// ─── HOME ────────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════ CARD RENDERERS */
+function renderCard(card,drawn,figCells,cardNum){
+  const dSet=new Set(toArr(drawn));
+  const cells=figCells?toArr(figCells):null;
+  const nums=toArr(card);
+  const winner=cells&&checkWin(nums,Array.from(dSet),cells);
+  let h=`<div class="bc-wrap${winner?' wglow':''}">
+    <div class="bc-cn">CARTÓN #${cardNum}</div>
+    <div class="bc-hdrs">${COLS.map(c=>`<div class="bc-h ${c}">${c}</div>`).join('')}</div>
+    <div class="bc-grid">`;
+  for(let row=0;row<5;row++){
+    for(let col=0;col<5;col++){
+      const isCtr=col===2&&row===2;
+      const val=nums[col]?.[row]??0;
+      const hit=isCtr?true:dSet.has(val);
+      const hi=cells?cells[row*5+col]:false;
+      h+=`<div class="bc-cell ${COLS[col]}${hit?' hit':''}${isCtr?' ctr':''}${hi?' fhi':''}">
+        ${isCtr?`<span class="cn">#${val}</span>`:val}
+      </div>`;
+    }
+  }
+  return h+`</div></div>`;
+}
+
+function renderFigCard(cells,label){
+  const c=toArr(cells);
+  let h=`<div class="bc-wrap">
+    ${label?`<div class="bc-cn">${label}</div>`:''}
+    <div class="bc-hdrs">${COLS.map(x=>`<div class="bc-h ${x}">${x}</div>`).join('')}</div>
+    <div class="bc-grid">`;
+  for(let row=0;row<5;row++){
+    for(let col=0;col<5;col++){
+      const isCtr=col===2&&row===2;
+      const on=c[row*5+col]||isCtr;
+      h+=`<div class="bc-cell ${COLS[col]}${on?' hit':''}${isCtr?' ctr':''}">
+        ${isCtr?`<span class="cn">N°</span>`:''}
+      </div>`;
+    }
+  }
+  return h+`</div></div>`;
+}
+
+function renderEdGrid(cells){
+  let h=`<div class="fec-grid">`;
+  for(const c of COLS)h+=`<div class="fec-hdr ${c}">${c}</div>`;
+  for(let row=0;row<5;row++){
+    for(let col=0;col<5;col++){
+      const idx=row*5+col;
+      const isCtr=idx===CTR;
+      const on=cells[idx];
+      h+=`<div class="fec-cell${isCtr?' fec-ctr':on?' fec-on':''}"${!isCtr?` data-fcell="${idx}"`:''}>${isCtr?'N°':''}</div>`;
+    }
+  }
+  return h+`</div>`;
+}
+
+function renderFigMini(cells){
+  const c=toArr(cells);
+  return`<div class="fig-mini">${Array.from({length:25},(_,i)=>`<div class="fmc${c[i]||i===CTR?' on':''}"></div>`).join('')}</div>`;
+}
+
+/* ═══════════════════════════════════════════════ TX PHASES */
+function renderTx(gs,draw){
+  const st=gs.status;
+  if(!draw||st==='waiting')return txWaiting();
+  if(st==='announcing_figure')return txAnnouncing(gs,draw);
+  if(st==='playing')return txPlaying(gs,draw);
+  if(st==='winner_found')return txWinner(gs,draw);
+  if(st==='finished')return txFinished(draw);
+  if(st==='no_winner')return txNoWinner(gs);
+  return txWaiting();
+}
+
+function txWaiting(){
+  const up=Object.entries(S.draws).map(([id,d])=>({id,...d})).filter(d=>d.status==='scheduled'||d.status==='live').sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+  return`<div class="tx-wait">
+    <div style="font-size:3.5rem;margin-bottom:.75rem">🎱</div>
+    <h2 class="gold fw8" style="font-size:1.8rem;margin-bottom:.4rem">En espera...</h2>
+    <p class="gray mb2">El sorteo comenzará pronto. ¡Prepárate!</p>
+    ${up.length?`<div class="card gl" style="max-width:380px;width:100%">
+      <div class="xs gray fw7 mb05" style="text-transform:uppercase;letter-spacing:.08em">Próximo sorteo</div>
+      <div class="fw7 white" style="font-size:1.1rem">${up[0].name}</div>
+      <div class="gold sm" style="font-family:'Space Mono',monospace">${up[0].date} – ${up[0].time}</div>
+      <button class="btn btn-g btn-full mt1" data-nav="comprar">🛒 Comprar Hojas</button>
+    </div>`:''}
+  </div>`;
+}
+
+function txAnnouncing(gs,draw){
+  const fi=gs.currentFigureIndex||0;
+  const fig=draw.figures?.[fi];
+  const cells=fig?toArr(fig.cells):Array(25).fill(false);
+  return`<div class="tx-ann">
+    <div class="tx-ann-ord">Figura ${fi+1} de 10</div>
+    <div class="tx-ann-name">${fig?.name||'Figura '+(fi+1)}</div>
+    <div class="tx-ann-prize">${fmtCOP(fig?.prize)}</div>
+    <div class="tx-ann-card">${renderFigCard(cells,'PATRÓN A COMPLETAR')}</div>
+    <div class="tx-ann-sub">Espera el inicio del sorteo de balotas...</div>
+  </div>`;
+}
+
+function txPlaying(gs,draw){
+  const fi=gs.currentFigureIndex||0;
+  const fig=draw.figures?.[fi];
+  const cells=fig?toArr(fig.cells):Array(25).fill(false);
+  const drawn=toArr(gs.drawnBalls);
+  const cb=gs.currentBall;
+  const lt=cb?letter(cb):'';
+  const col=cb?color(cb):'#222';
+  const darkText=['G','O'].includes(lt);
+  return`<div class="tx-play">
+    <div class="tx-left">
+      <div class="tx-fig-lbl">Figura ${fi+1}/10</div>
+      ${renderFigCard(cells,fig?.name||'')}
+      <div class="tx-prize-box"><div class="tx-prize-lbl">Premio</div><div class="tx-prize-amt">${fmtCOP(fig?.prize)}</div></div>
+    </div>
+    <div class="tx-center">
+      <div class="tx-fig-lbl">Balotas sorteadas · ${drawn.length}/75</div>
+      <div class="tx-ball-hist">${drawn.map(b=>`<div class="chip ${letter(b)}">${b}</div>`).join('')}</div>
+    </div>
+    <div class="tx-right">
+      ${cb?`<div class="tx-fig-lbl">Última Balota</div>
+        <div class="tx-bigball" style="background:${col};${darkText?'color:#000':'color:#fff'}">
+          <span class="bl">${lt}</span>
+          <span class="bn">${cb}</span>
+        </div>
+        <div class="tx-count">${drawn.length} de 75</div>`
+      :`<div class="gray sm">Esperando primera balota...</div>`}
+    </div>
+  </div>`;
+}
+
+function txWinner(gs,draw){
+  const w=gs.currentWinner||{};
+  const fi=gs.currentFigureIndex||0;
+  const nxt=draw?.figures?.[fi+1];
+  return`<div class="tx-win">
+    <div class="tx-w-ic">🏆</div>
+    <div class="tx-w-ttl">¡TENEMOS GANADOR!</div>
+    <div class="tx-w-cn">Cartón #${w.cardNumber}</div>
+    <div class="tx-w-nm">${w.customerName||'Jugador'}</div>
+    <div class="tx-w-pr">${fmtCOP(w.prize)}</div>
+    <div class="tx-w-fi">${w.figureName||''} · Figura ${fi+1}/10</div>
+    ${nxt?`<p class="gray sm">La próxima figura se anunciará en breve...</p>`:`<p class="gray sm">¡Último premio del sorteo!</p>`}
+  </div>`;
+}
+
+function txFinished(draw){
+  const dw=Object.values(S.winners).filter(w=>w.drawId===draw?.id).sort((a,b)=>a.figureIndex-b.figureIndex);
+  return`<div class="tx-fin">
+    <div style="font-size:3.5rem;margin-bottom:.75rem">🎊</div>
+    <h2 class="gold fw8" style="font-size:1.8rem;margin-bottom:.4rem">¡Sorteo Finalizado!</h2>
+    <p class="gray mb2">${draw?.name||''} · Gracias por participar</p>
+    ${dw.length?`<div style="max-width:480px;width:100%">${dw.map(w=>`<div class="win-row">
+      <div><span class="gold fw7 sm">Figura ${w.figureIndex+1}</span> <span class="gray xs">· ${w.figureName}</span><br><span class="white sm">${w.customerName} · Cartón #${w.cardNumber}</span></div>
+      <div class="gold fw7" style="font-family:'Space Mono',monospace">${fmtCOP(w.prize)}</div>
+    </div>`).join('')}</div>`:''}
+    <button class="btn btn-o mt2" data-nav="home">Volver al inicio</button>
+  </div>`;
+}
+
+function txNoWinner(gs){
+  const fi=gs.currentFigureIndex||0;
+  return`<div class="tx-fin">
+    <div style="font-size:3rem;margin-bottom:.75rem">😔</div>
+    <h2 class="white fw8 mb05">Figura ${fi+1} sin ganador</h2>
+    <p class="gray">Se sortearon las 75 balotas sin completar la figura.</p>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════ PAGES */
 function pgHome(){
-  const patDefs=[
-    {name:'Línea',       cells:[[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
-    {name:'Diagonal',    cells:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]},
-    {name:'4 Esquinas',  cells:[[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]]},
-    {name:'Cruz',        cells:[[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]]},
-    {name:'Cartón Lleno',cells:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]},
+  const pats=[
+    {n:'Línea',c:[1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    {n:'Diagonal',c:[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1]},
+    {n:'4 Esquinas',c:[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1]},
+    {n:'Cruz',c:[0,0,1,0,0,0,0,1,0,0,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0]},
+    {n:'Cartón Lleno',c:Array(25).fill(1)},
   ];
-  const wArr=Object.values(S.winners).sort((a,b)=>b.createdAt-a.createdAt).slice(0,3);
+  const wins=Object.values(S.winners).sort((a,b)=>b.createdAt-a.createdAt).slice(0,3);
   const steps=[
-    {n:'01',icon:'🛒',t:'Compra tus Hojas',d:'Elige la cantidad de hojas. Cada hoja incluye múltiples cartones.'},
-    {n:'02',icon:'💸',t:'Realiza el Pago',d:'Transfiere y envía el comprobante por WhatsApp para validación.'},
-    {n:'03',icon:'📺',t:'Conéctate al Vivo',d:'Ingresa con tu ID de acceso único y sigue el sorteo en tiempo real.'},
-    {n:'04',icon:'🏆',t:'¡Gana Premios!',d:'Los cartones se marcan automáticamente. El sistema detecta ganadores.'},
+    {n:'01',i:'🛒',t:'Compra tus Hojas',d:'Elige cuántas hojas quieres. Cada hoja trae cartones únicos y numerados para que no haya repetidos.'},
+    {n:'02',i:'💸',t:'Confirma el Pago',d:'Transfiere por Nequi o Bre-B y comparte el comprobante por WhatsApp para activar tus hojas.'},
+    {n:'03',i:'📺',t:'Conéctate al Vivo',d:'Ve a "Mis Cartones", escribe tu número y sigue el sorteo. Los números se marcan solos.'},
+    {n:'04',i:'🏆',t:'Gana 10 Premios',d:'Hay 10 figuras por sorteo, cada una con su propio premio. ¡Más oportunidades de ganar!'},
   ];
-  return`
+  return`<div>
   <section class="hero">
     <div class="hero-bg"></div>
-    <div class="hero-content">
-      <div class="hero-badge">🎱 Bingo Online en Vivo</div>
+    <div class="hero-inner">
+      <div class="hero-badge">🎱 BINGO ONLINE EN VIVO</div>
       <h1 class="hero-title">La emoción de<br><span class="gold">ganar en grande</span><br><span class="dim">desde casa</span></h1>
-      <p class="hero-sub">Cada sorteo es único. Compra tus hojas, conéctate a la transmisión en vivo y reclama tus premios al instante.</p>
+      <p class="hero-sub">10 figuras. 10 premios. Cada sorteo es único. Tus cartones son irrepetibles.</p>
       <div class="hero-btns">
-        <button class="btn-gold btn-lg" data-nav="comprar">🛒 Comprar Cartones</button>
-        <button class="btn-outline btn-lg" data-nav="sala">▶ Ver Sala</button>
+        <button class="btn btn-g btn-xl" data-nav="comprar">🛒 Comprar Hojas</button>
+        <button class="btn btn-o btn-xl" data-nav="sala">▶ Ver Sala</button>
       </div>
       <div class="hero-stats">
-        <div class="hstat"><div class="hstat-n gold">75</div><div class="hstat-l">Balotas</div></div>
+        <div class="hstat"><div class="hstat-n">75</div><div class="hstat-l">Balotas</div></div>
         <div class="hstat-sep"></div>
-        <div class="hstat"><div class="hstat-n gold">$1M</div><div class="hstat-l">Premio Mayor</div></div>
+        <div class="hstat"><div class="hstat-n">×10</div><div class="hstat-l">Premios</div></div>
         <div class="hstat-sep"></div>
-        <div class="hstat"><div class="hstat-n gold">24/7</div><div class="hstat-l">Sorteos</div></div>
+        <div class="hstat"><div class="hstat-n">100%</div><div class="hstat-l">Únicos</div></div>
       </div>
     </div>
   </section>
 
   <section class="section">
-    <div class="section-title"><h2 class="gold">¿Cómo Funciona?</h2><p>4 pasos para empezar a ganar</p></div>
-    <div class="grid4">
-      ${steps.map(s=>`<div class="card glass rel">
-        <div class="step-num-bg">${s.n}</div>
-        <div class="step-icon">${s.icon}</div>
-        <h3 class="white">${s.t}</h3>
-        <p class="gray small">${s.d}</p>
-      </div>`).join('')}
-    </div>
+    <div class="stitle"><h2 class="gold">¿Cómo Funciona?</h2><p>4 pasos para empezar a ganar</p></div>
+    <div class="g4">${steps.map(s=>`<div class="card gl rel">
+      <div style="position:absolute;top:1rem;right:1.1rem;font-size:2.8rem;font-weight:900;color:rgba(255,255,255,.04);font-family:'Space Mono',monospace;line-height:1">${s.n}</div>
+      <div style="font-size:1.9rem;margin-bottom:.65rem">${s.i}</div>
+      <h3 class="white fw7 mb05">${s.t}</h3>
+      <p class="gray sm">${s.d}</p>
+    </div>`).join('')}</div>
   </section>
 
-  <section class="section border-top">
-    <div class="section-title"><h2 class="gold">Patrones Ganadores</h2><p>Múltiples formas de ganar en cada sorteo</p></div>
-    <div class="grid5">
-      ${patDefs.map(p=>`<div class="card glass pcard">
-        <div class="pname white fw-bold">${p.name}</div>
-        <div class="mini-board">${p.cells.flat().map(c=>`<div class="mini-cell ${c?'on':''}"></div>`).join('')}</div>
-      </div>`).join('')}
-    </div>
+  <section class="section" style="border-top:1px solid var(--border)">
+    <div class="stitle"><h2 class="gold">Patrones Ganadores</h2><p>El admin crea las figuras. Cada sorteo tiene 10 figuras con premios.</p></div>
+    <div class="g5">${pats.map(p=>`<div class="card gl tc" style="padding:1.1rem">
+      <div class="fw7 white sm mb05">${p.n}</div>
+      <div class="mini-board">${p.c.map(v=>`<div class="mini-cell${v?' on':''}"></div>`).join('')}</div>
+    </div>`).join('')}</div>
   </section>
 
-  <section class="section border-top">
-    <div class="section-title"><h2 class="gold">🏆 Nuestros Ganadores</h2><p>¡El próximo puedes ser tú!</p></div>
-    <div class="grid3">
-      ${wArr.length?wArr.map(w=>`<div class="card glass text-center">
-        <div style="font-size:2.5rem">🏆</div>
-        <div class="fw-bold white">${w.customerName||'Ganador'}</div>
-        <div class="gold fw-bold fs-xl">${w.prize?'$'+Number(w.prize).toLocaleString('es-CO'):''}</div>
-        <div class="gray small">${w.patternName||''}</div>
-      </div>`).join('')
-      :`<div class="card glass text-center"><div style="font-size:2.5rem">🎉</div><div class="gray">¡Sé el primer ganador!</div></div>
-        <div class="card glass text-center"><div style="font-size:2.5rem">💰</div><div class="gray">Grandes premios esperan</div></div>
-        <div class="card glass text-center"><div style="font-size:2.5rem">⭐</div><div class="gray">Tu suerte llega hoy</div></div>`}
-    </div>
+  <section class="section" style="border-top:1px solid var(--border)">
+    <div class="stitle"><h2 class="gold">🏆 Ganadores Recientes</h2><p>¡El próximo puedes ser tú!</p></div>
+    <div class="g3">${wins.length?wins.map(w=>`<div class="card gl tc">
+      <div style="font-size:2.2rem">🏆</div>
+      <div class="fw7 white">${w.customerName||'Ganador'}</div>
+      <div class="gold fw8" style="font-size:1.25rem;font-family:'Space Mono',monospace">${fmtCOP(w.prize)}</div>
+      <div class="gray sm">${w.figureName||''}</div>
+    </div>`).join('')
+    :`<div class="card gl tc"><div style="font-size:2rem">🎉</div><div class="gray sm mt05">¡Sé el primero!</div></div>
+      <div class="card gl tc"><div style="font-size:2rem">💰</div><div class="gray sm mt05">Grandes premios</div></div>
+      <div class="card gl tc"><div style="font-size:2rem">⭐</div><div class="gray sm mt05">Tu suerte llega</div></div>`}</div>
   </section>
 
-  <section class="section cta-section">
-    <h2 class="gold fs-2xl">¿Listo para llenar tu bolsillo?</h2>
-    <p class="gray">No esperes más. Únete al próximo sorteo en vivo.</p>
-    <button class="btn-gold btn-xl" data-nav="comprar">🛒 Comprar Ahora →</button>
-  </section>`;
+  <section class="section tc" style="background:linear-gradient(135deg,rgba(240,180,41,.05),rgba(16,185,129,.04));border-radius:18px;margin:2rem auto">
+    <h2 class="gold fw8" style="font-size:1.7rem;margin-bottom:.4rem">¿Listo para llenar tu bolsillo?</h2>
+    <p class="gray mb1">Únete al próximo sorteo. Cartones únicos y numerados garantizados.</p>
+    <button class="btn btn-g btn-xl" data-nav="comprar">🛒 Comprar Ahora →</button>
+  </section>
+  </div>`;
 }
 
-// ─── SALA ────────────────────────────────────────────────────────────────────
 function pgSala(){
-  const all=Object.entries(S.draws).map(([id,d])=>({id,...d}));
-  const live=all.find(d=>d.status==='live');
-  const upcoming=all.filter(d=>d.status==='scheduled'||d.status==='live')
-    .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
-  const display=live||upcoming[0];
-  const gs=S.gameState;
-  return`<div class="page-wrap">
-    <div class="section-title"><h1 class="gold">Sala de Juego</h1><p class="gray">Sigue los sorteos en vivo</p></div>
-    ${display?`<div class="card glass draw-display">
-      <div class="draw-info">
-        ${live?`<span class="badge red">🔴 EN VIVO</span>`:`<span class="badge yellow">🕐 PRÓXIMO SORTEO</span>`}
-        <h2 class="white">${display.name}</h2>
-        ${display.description?`<p class="gray">${display.description}</p>`:''}
-        <div class="draw-meta">
-          <span>📅 ${display.date}</span>
-          <span>🕐 ${display.time}</span>
-          <span class="gold">💵 $${Number(display.pricePerSheet||4000).toLocaleString('es-CO')}/hoja</span>
-        </div>
-        <div class="flex-gap">
-          <button class="btn-gold" data-nav="comprar">🛒 Comprar Hojas</button>
-          <button class="btn-outline" data-nav="play">▶ Jugar</button>
-        </div>
-      </div>
-      ${live&&gs.currentBall?`<div class="draw-ball-side">
-        <p class="gray small">BALOTA ACTUAL</p>
-        <div class="big-ball" style="background:${getBallColor(gs.currentBall)}">
-          <span class="ball-letter">${getBallLetter(gs.currentBall)}</span>
-          <span class="ball-num">${gs.currentBall}</span>
-        </div>
-        <p class="gray small">${(gs.drawnBalls||[]).length} de 75</p>
-      </div>`:``}
-    </div>`:
-    `<div class="card glass text-center"><p class="gray fs-lg">No hay sorteos programados.</p></div>`}
-    ${upcoming.length>1?`<div>
-      <h3 class="white mb-1">Próximos Sorteos</h3>
-      <div class="vlist">
-        ${upcoming.map(d=>`<div class="card glass draw-item">
-          <div>
-            <div class="fw-bold white">${d.name}</div>
-            <div class="gray small">${d.date} – ${d.time}</div>
-          </div>
-          <div class="flex-gap">
-            <span class="gold fw-bold">$${Number(d.pricePerSheet||4000).toLocaleString('es-CO')}</span>
-            <button class="btn-gold sm" data-nav="comprar">Comprar</button>
-          </div>
-        </div>`).join('')}
-      </div>
-    </div>`:''}
-  </div>`;
+  const gs=S.gs;
+  const draw=gs.currentDrawId?S.draws[gs.currentDrawId]:null;
+  return`<div class="tx">${renderTx(gs,draw)}</div>`;
 }
 
-// ─── COMPRAR ─────────────────────────────────────────────────────────────────
 function pgComprar(){
-  if(!S.loaded.draws) return`<div class="page-wrap"><div class="loading">⏳ Cargando sorteos...</div></div>`;
-  const draws=Object.entries(S.draws)
-    .map(([id,d])=>({id,...d}))
-    .filter(d=>d.status==='scheduled'||d.status==='live')
-    .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
-
-
-
-  return`<div class="page-wrap">
-    <div class="section-title"><h1 class="gold">🛒 Comprar Hojas</h1><p class="gray">Elige tu sorteo y cantidad de hojas</p></div>
-    ${draws.length===0
-      ?`<div class="card glass text-center">
-          <div style="font-size:3rem">📋</div>
-          <h3 class="white">No hay sorteos disponibles</h3>
-          <p class="gray">El administrador publicará el próximo sorteo pronto. ¡Vuelve más tarde!</p>
-          <button class="btn-outline mt-1" data-nav="home">Volver al inicio</button>
-        </div>`
-      :`<div class="vlist">${draws.map(d=>{
-          const qty=S.qty[d.id]||1;
-          const pps=Number(d.pricePerSheet||4000);
-          const cps=Number(d.cardsPerSheet||6);
-          return`<div class="card glass">
-            <div class="draw-card-top">
-              <div>
-                <div class="fw-bold white fs-md">${d.name}</div>
-                <div class="gray small">${d.date} – ${d.time}</div>
-                ${d.description?`<div class="gray small mt-05">${d.description}</div>`:''}
-              </div>
-              <div class="price-tag">
-                <div class="gold fw-bold fs-lg">$${pps.toLocaleString('es-CO')}</div>
-                <div class="gray small">por hoja · ${cps} cartones</div>
-                <span class="badge ${d.status==='live'?'red':'yellow'} mt-05">${d.status==='live'?'🔴 En Vivo':'🕐 Programado'}</span>
-              </div>
-            </div>
-            <div class="qty-row">
-              <span class="gray small">Hojas:</span>
-              <button class="qty-btn" data-minus="${d.id}">−</button>
-              <span class="qty-val" id="qv-${d.id}">${qty}</span>
-              <button class="qty-btn" data-plus="${d.id}">+</button>
-              <span class="gray small" id="qi-${d.id}">${cps*qty} cartones · <strong class="gold">$${(pps*qty).toLocaleString('es-CO')}</strong></span>
-            </div>
-            <button class="btn-gold w-full mt-05" data-checkout="${d.id}">Continuar →</button>
-          </div>`;
-        }).join('')}</div>`}
+  const draws=Object.entries(S.draws).map(([id,d])=>({id,...d})).filter(d=>d.status==='scheduled'||d.status==='live').sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+  return`<div class="pw">
+    <div class="stitle"><h1 class="gold">🛒 Comprar Hojas</h1><p class="gray">Elige tu sorteo y cantidad de hojas</p></div>
+    ${!draws.length?`<div class="card gl empty">
+      <div style="font-size:2.5rem">📋</div>
+      <h3 class="white mb05">No hay sorteos disponibles</h3>
+      <p class="gray mb1">El administrador publicará el próximo sorteo pronto.</p>
+      <button class="btn btn-o" data-nav="home">Volver al inicio</button>
+    </div>`:`<div class="vlist">${draws.map(d=>{
+      const qty=S.qty[d.id]||1;
+      const pps=Number(d.pricePerSheet||5000);
+      const cps=Number(d.cardsPerSheet||6);
+      const figs=Object.values(d.figures||{});
+      const totalPrize=figs.reduce((s,f)=>s+Number(f.prize||0),0);
+      return`<div class="card gl">
+        <div class="draw-top">
+          <div>
+            <div class="fw7 white" style="font-size:1rem">${d.name}</div>
+            <div class="gray sm" style="font-family:'Space Mono',monospace">${d.date} – ${d.time}</div>
+            ${d.description?`<div class="gray sm mt05">${d.description}</div>`:''}
+            ${totalPrize?`<div class="grn sm mt05">🏆 Premio total: ${fmtCOP(totalPrize)}</div>`:''}
+          </div>
+          <div class="price-tag">
+            <div class="gold fw8" style="font-size:1.15rem;font-family:'Space Mono',monospace">${fmtCOP(pps)}</div>
+            <div class="gray sm">por hoja · ${cps} cartones</div>
+            <span class="badge ${d.status==='live'?'b-red':'b-yel'} mt05">${d.status==='live'?'🔴 En Vivo':'🕐 Programado'}</span>
+          </div>
+        </div>
+        <div class="qty-row">
+          <span class="gray sm">Hojas:</span>
+          <button class="qty-btn" data-minus="${d.id}">−</button>
+          <span class="qty-val" id="qv-${d.id}">${qty}</span>
+          <button class="qty-btn" data-plus="${d.id}">+</button>
+          <span class="gray sm" id="qi-${d.id}">${cps*qty} cartones · <strong class="gold" style="font-family:'Space Mono',monospace">${fmtCOP(pps*qty)}</strong></span>
+        </div>
+        <button class="btn btn-g btn-full" data-checkout="${d.id}">Continuar →</button>
+      </div>`;
+    }).join('')}</div>`}
   </div>`;
 }
 
-// ─── CHECKOUT ────────────────────────────────────────────────────────────────
 function pgCheckout(){
   const draw=S.checkoutDraw;
-  if(!draw) return`<div class="page-wrap"><div class="card glass text-center"><p class="gray">Selecciona un sorteo.</p><button class="btn-gold" data-nav="comprar">Ir a comprar</button></div></div>`;
+  if(!draw)return`<div class="pw"><div class="card gl tc empty"><p class="gray">Selecciona un sorteo primero.</p><button class="btn btn-g mt1" data-nav="comprar">Ver sorteos</button></div></div>`;
   const n=S.checkoutSheets||1;
-  const pps=Number(draw.pricePerSheet||4000);
+  const pps=Number(draw.pricePerSheet||5000);
   const cps=Number(draw.cardsPerSheet||6);
   const total=pps*n;
-  return`<div class="page-wrap narrow">
+  return`<div class="pw narrow">
     <button class="btn-back" data-nav="comprar">← Volver</button>
-    <h1 class="gold">🛒 Finalizar Compra</h1>
-    <p class="gray">${draw.name}</p>
-    <div class="checkout-grid">
-      <div class="card glass">
-        <h3 class="white mb-1">Tus datos</h3>
-        <div class="fg"><label>Nombre completo</label><input id="co-name" type="text" placeholder="Juan Pérez" class="inp"/></div>
-        <div class="fg"><label>Teléfono</label><input id="co-phone" type="tel" placeholder="3001234567" class="inp"/></div>
-        <div class="fg"><label>Cédula</label><input id="co-id" type="text" placeholder="1234567890" class="inp"/></div>
-        <button class="btn-gold w-full mt-1" id="btn-co-submit">📲 Confirmar y contactar por WhatsApp</button>
-        <div id="co-msg" class="hidden"></div>
+    <h1 class="gold mb05">🛒 Finalizar Pedido</h1>
+    <p class="gray sm mb2">${draw.name}</p>
+    <div class="co-grid">
+      <div class="card gl">
+        <h3 class="white mb1">Tus datos</h3>
+        <div class="fg"><label>Nombre completo</label><input id="co-name" class="inp" type="text" placeholder="Juan Pérez"/></div>
+        <div class="fg">
+          <label>Teléfono</label>
+          <div class="inp-pre"><span class="pre">+57</span><input id="co-phone" class="inp" type="tel" placeholder="3001234567" maxlength="10"/></div>
+        </div>
+        <button class="btn btn-g btn-full mt1" id="btn-co-submit">📲 Confirmar y contactar por WhatsApp</button>
+        <p class="gray xs mt1" style="line-height:1.5">Te contactaremos por WhatsApp para confirmar el pago y asignarte tus cartones únicos numerados.</p>
       </div>
       <div>
-        <div class="card glass mb-1">
-          <h3 class="white">Resumen</h3>
-          <div class="sr"><span class="gray">Sorteo</span><span class="white">${draw.name}</span></div>
-          <div class="sr"><span class="gray">Hojas</span><span class="white">${n}</span></div>
-          <div class="sr"><span class="gray">Cartones</span><span class="white">${cps*n}</span></div>
-          <div class="sr"><span class="gray">Precio/hoja</span><span class="white">$${pps.toLocaleString('es-CO')}</span></div>
-          <div class="sr total"><span>TOTAL</span><span class="gold fw-bold fs-lg">$${total.toLocaleString('es-CO')}</span></div>
+        <div class="card gl mb1">
+          <h3 class="white mb1">Resumen</h3>
+          <div class="sr"><span class="gray sm">Sorteo</span><span class="white sm fw7">${draw.name}</span></div>
+          <div class="sr"><span class="gray sm">Hojas</span><span class="white sm fw7" style="font-family:'Space Mono',monospace">${n}</span></div>
+          <div class="sr"><span class="gray sm">Cartones</span><span class="white sm fw7" style="font-family:'Space Mono',monospace">${cps*n}</span></div>
+          <div class="sr"><span class="gray sm">Precio/hoja</span><span class="white sm fw7" style="font-family:'Space Mono',monospace">${fmtCOP(pps)}</span></div>
+          <div class="sr sr-total flex-b"><span class="fw7 white">TOTAL</span><span class="gold fw8" style="font-size:1.3rem;font-family:'Space Mono',monospace">${fmtCOP(total)}</span></div>
         </div>
-        ${S.settings.bankAccount?`<div class="card glass">
-          <h3 class="white">Datos de pago</h3>
-          <div class="sr"><span class="gray">Banco</span><span class="white">${S.settings.bankName||''}</span></div>
-          <div class="sr"><span class="gray">Cuenta</span><span class="white">${S.settings.bankAccount}</span></div>
-          <div class="sr"><span class="gray">Titular</span><span class="white">${S.settings.accountHolder||''}</span></div>
+        ${S.settings.bankAccount?`<div class="card gl">
+          <h3 class="white mb1">Datos de pago</h3>
+          <div class="sr"><span class="gray sm">Banco</span><span class="white sm">${S.settings.bankName||''}</span></div>
+          <div class="sr"><span class="gray sm">Número</span><span class="white sm fw7" style="font-family:'Space Mono',monospace">${S.settings.bankAccount}</span></div>
+          <div class="sr"><span class="gray sm">Titular</span><span class="white sm">${S.settings.accountHolder||''}</span></div>
         </div>`:''}
       </div>
     </div>
   </div>`;
 }
 
-// ─── PLAY ────────────────────────────────────────────────────────────────────
-function getCountdown(draw){
-  if(!draw||!draw.date||!draw.time) return null;
-  const target=new Date(draw.date+'T'+draw.time);
-  const diff=target-Date.now();
-  if(diff<=0) return null;
-  const h=Math.floor(diff/3600000);
-  const m=Math.floor((diff%3600000)/60000);
-  return h>0?`${h}h ${m}m`:`${m}m`;
-}
-
-// Actualiza el countdown cada minuto sin re-renderizar todo
-let _countdownInterval=null;
-function startCountdownTick(){
-  if(_countdownInterval) clearInterval(_countdownInterval);
-  _countdownInterval=setInterval(()=>{
-    const el=document.getElementById('tx-countdown-val');
-    if(!el) return;
-    const allDraws=Object.values(S.draws).filter(d=>d.status==='scheduled')
-      .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
-    const nd=allDraws[0]||null;
-    if(nd){ const c=getCountdown(nd); if(c) el.textContent=c; }
-  },30000);
-}
-
 function pgPlay(){
-  if(!S.isAuthenticated) return`<div class="play-login-wrap">
-    <div class="play-login-box">
-      <div style="font-size:3.5rem">🎱</div>
-      <h2 class="gold" style="margin:.5rem 0">Ingresar a la Sala</h2>
-      <p class="gray small">Ingresa tu ID de acceso para ver tus cartones</p>
-      <input id="play-acc" type="text" placeholder="BL_1234567890_ABC123" class="inp text-center mono" style="margin:.85rem 0"/>
-      <button class="btn-gold w-full" id="btn-play-login">▶ Ingresar</button>
-      <p class="gray small mt-1">Tu ID llegó por WhatsApp al confirmar tu compra.</p>
-    </div>
-  </div>`;
-
-  const gs=S.gameState;
-  const drawn=gs.drawnBalls||[];
-  const mySheets=Object.values(S.sheets).filter(sh=>sh.accessId===S.accessId);
-  const isLive=gs.currentDrawId&&gs.status!=='waiting';
-  const allDraws=Object.values(S.draws).filter(d=>d.status==='scheduled')
-    .sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
-  const nextDraw=(!isLive&&allDraws[0])||null;
-  const countdown=nextDraw?getCountdown(nextDraw):null;
-  const patterns=Object.values(S.patterns);
-
-  // Inicia tick del countdown
-  setTimeout(startCountdownTick, 100);
-
-  return`<div class="sala-wrap">
-
-    <!-- HEADER SALA -->
-    <div class="sala-header">
-      <span class="sala-title">🎱 BOLSILLO LLENO</span>
-      <button class="sala-salir" id="btn-play-logout">Salir</button>
-    </div>
-
-    <!-- CAJA TRANSMISIÓN -->
-    <div class="tx-box ${isLive?'live':''}">
-      ${isLive ? `
-        <div class="tx-live-row">
-          <span class="badge red" style="font-size:.7rem">🔴 EN VIVO</span>
-          <span class="gray small">${drawn.length}/75 balotas</span>
-        </div>
-        <div class="tx-live-body">
-          ${gs.currentBall?`
-            <div class="tx-ball" style="background:${getBallColor(gs.currentBall)}">
-              <span class="tx-ball-letter">${getBallLetter(gs.currentBall)}</span>
-              <span class="tx-ball-num">${gs.currentBall}</span>
-            </div>`:
-            `<div class="tx-ball-empty">⏳</div>`}
-          <div class="tx-recent">
-            <div class="gray" style="font-size:.65rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.3rem">Últimas balotas</div>
-            <div class="tx-recent-balls">
-              ${drawn.slice(-12).reverse().map((b,i)=>`<span class="sball-xs ${i===0?'sball-cur':''}" style="background:${getBallColor(b)}">${b}</span>`).join('')}
-            </div>
-          </div>
-        </div>
-      ` : `
-        <div class="tx-waiting">
-          <div class="tx-play-icon">▶</div>
-          <div class="tx-label">TRANSMISIÓN</div>
-          ${countdown?`
-            <div class="tx-prox">PRÓX. SORTEO</div>
-            <div class="tx-countdown" id="tx-countdown-val">${countdown}</div>
-            ${nextDraw?`<div class="tx-draw-date">${new Date(nextDraw.date+'T'+nextDraw.time).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}
-            <div class="tx-sub">LA TRANSMISIÓN INICIARÁ PRONTO</div>
-          `:`<div class="tx-sub" style="margin-top:.5rem">Sin sorteos programados</div>`}
-        </div>
-      `}
-    </div>
-
-    <!-- PATRONES — scroll horizontal -->
-    ${patterns.length?`
-    <div class="pat-scroll">
-      ${patterns.map(p=>`<div class="pat-chip">
-        <div class="pat-grid">${renderMiniPattern(p.type)}</div>
-        <div style="font-size:.7rem;font-weight:700;color:#eab308">$${Number(p.prize||0).toLocaleString('es-CO')}</div>
-        <div style="font-size:.58rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;text-align:center">${p.name}</div>
-      </div>`).join('')}
-    </div>`:''}
-
-    <!-- MIS HOJAS -->
-    <div class="mis-hojas-hdr">
-      <span class="mis-hojas-title">MIS <span style="background:linear-gradient(90deg,#facc15,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent">HOJAS</span></span>
-      <span class="mis-hojas-count">${mySheets.length} HOJA${mySheets.length!==1?'S':''} ADQUIRIDA${mySheets.length!==1?'S':''}</span>
-    </div>
-
-    ${mySheets.length ? mySheets.map((sh,si)=>`
-      <div class="hoja-wrap">
-        <div class="hoja-label">— HOJA ${si+1} —</div>
-        <div class="cards-grid3">
-          ${(sh.cards||[]).map((c,ci)=>renderCard(c,drawn,si,ci)).join('')}
-        </div>
-      </div>`).join('')
-    : `<div class="no-cards-box">
-        <div style="font-size:2.5rem">🔍</div>
-        <div style="color:#eab308;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase">Consulta tus cartones</div>
-        <p class="gray small" style="margin-top:.25rem">No se encontraron cartones para este ID.<br>Si compraste, espera a que el admin confirme tu pago.</p>
-      </div>`}
-
-    <div style="height:2rem"></div>
-  </div>`;
-}
-
-function renderMiniPattern(type){
-  const maps={
-    horizontal_line:[[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
-    vertical_line:  [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
-    diagonal:       [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]],
-    four_corners:   [[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]],
-    cross:          [[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]],
-    full_card:      [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
-  };
-  const grid=maps[type]||maps.full_card;
-  return grid.flat().map(c=>`<div class="pat-dot ${c?'on':''}"></div>`).join('');
-}
-
-function renderCard(card,drawn,si,ci){
-  const nums=card.numbers||card;
-  const won=['horizontal_line','vertical_line','diagonal','four_corners','cross','full_card']
-    .some(t=>checkWin(nums,drawn,t));
-  return`<div class="bingo-card ${won?'won':''}">
-    ${won?`<div class="win-banner">🎉 BINGO</div>`:''}
-    <div class="bingo-hdr">${['B','I','N','G','O'].map(l=>`<div>${l}</div>`).join('')}</div>
-    <div class="bingo-grid">
-      ${Array.from({length:5},(_,row)=>Array.from({length:5},(_,col)=>{
-        const v=nums[col][row];
-        const isFree=v===null||v===0;
-        const mk=isFree||new Set(drawn).has(v);
-        return`<div class="bc ${mk?'mk':''} ${isFree?'fr':''}">${isFree?'★':v}</div>`;
-      }).join('')).join('')}
-    </div>
-  </div>`;
-}
-
-// ─── LOGIN ───────────────────────────────────────────────────────────────────
-function pgLogin(){
-  return`<div class="page-wrap narrow flex-center">
-    <div class="card glass" style="max-width:420px;width:100%">
-      <div class="text-center mb-1"><div style="font-size:3rem">🔐</div><h1 class="gold">Panel Admin</h1></div>
-      <div class="fg"><label>Correo</label><input id="l-email" type="email" class="inp" placeholder="admin@example.com"/></div>
-      <div class="fg"><label>Contraseña</label><input id="l-pass" type="password" class="inp" placeholder="••••••••"/></div>
-      <div id="l-err" class="hidden err-msg"></div>
-      <button class="btn-gold w-full mt-1" id="btn-login">🔑 Iniciar Sesión</button>
-      <button class="btn-back mt-1" data-nav="home">← Volver</button>
-    </div>
-  </div>`;
-}
-
-// ─── ADMIN ───────────────────────────────────────────────────────────────────
-function pgAdmin(){
-  const tabs=[['dashboard','Dashboard'],['draws','Sorteos'],['purchases','Compras'],['game','Juego'],['patterns','Figuras'],['winners','Ganadores'],['settings','Config']];
-  return`<div class="page-wrap">
-    <h1 class="gold">⚙️ Panel Admin</h1>
-    <div class="admin-tabs">${tabs.map(([id,l])=>`<button class="tab-btn ${S.adminTab===id?'active':''}" data-tab="${id}">${l}</button>`).join('')}</div>
-    <div>${adminTab()}</div>
-  </div>`;
-}
-
-function adminTab(){
-  switch(S.adminTab){
-    case'dashboard':return aDash();
-    case'draws':    return aDraws();
-    case'purchases':return aPurchases();
-    case'game':     return aGame();
-    case'patterns': return aPatterns();
-    case'winners':  return aWinners();
-    case'settings': return aSettings();
+  const gs=S.gs;
+  const draw=gs.currentDrawId?S.draws[gs.currentDrawId]:null;
+  const fi=gs.currentFigureIndex||0;
+  const fig=draw?.figures?.[fi];
+  const cells=fig?toArr(fig.cells):null;
+  const drawn=toArr(gs.drawnBalls);
+  let mySheets=[];
+  if(S.playerPhone){
+    const ph=S.playerPhone.startsWith('+57')?S.playerPhone:'+57'+S.playerPhone;
+    mySheets=Object.values(S.sheets).filter(sh=>sh.drawId===gs.currentDrawId&&sh.phone===ph);
   }
-}
-
-function aDash(){
-  const pArr=Object.values(S.purchases);
-  const confirmed=pArr.filter(p=>p.status==='confirmed');
-  const pending=pArr.filter(p=>p.status==='pending');
-  const sales=confirmed.reduce((s,p)=>s+Number(p.totalPrice||0),0);
-  const sheets=confirmed.reduce((s,p)=>s+Number(p.sheetCount||0),0);
-  const stats=[
-    ['💰','Ventas','$'+sales.toLocaleString('es-CO'),'green'],
-    ['🃏','Hojas vendidas',sheets,'yellow'],
-    ['🛒','Compras totales',pArr.length,'blue'],
-    ['⏳','Pendientes',pending.length,'orange'],
-    ['🏆','Ganadores',Object.keys(S.winners).length,'purple'],
-    ['🎱','En Vivo',Object.values(S.draws).filter(d=>d.status==='live').length,'red'],
-  ];
-  const recent=pArr.sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
-  const nextDraws=Object.values(S.draws).filter(d=>d.status==='scheduled').slice(0,5);
-  return`<div class="stats-grid">${stats.map(([ic,l,v,c])=>`<div class="card glass stat-card">
-    <div class="si ${c}">${ic}</div><div class="gray small">${l}</div><div class="white fw-bold fs-lg">${v}</div>
-  </div>`).join('')}</div>
-  <div class="grid2 mt-1">
-    <div class="card glass"><h3 class="white">Compras Recientes</h3>
-      ${recent.map(p=>`<div class="li"><div><div class="white small">${p.customerName}</div><div class="gray small">${p.sheetCount} hojas · $${Number(p.totalPrice||0).toLocaleString('es-CO')}</div></div>
-        <span class="badge ${p.status==='confirmed'?'green':p.status==='pending'?'yellow':'red'}">${p.status}</span></div>`).join('')}
-      ${!recent.length?`<p class="gray small">Sin compras</p>`:''}
-    </div>
-    <div class="card glass"><h3 class="white">Próximos Sorteos</h3>
-      ${nextDraws.map(d=>`<div class="li"><div><div class="white small">${d.name}</div><div class="gray small">${d.date} – ${d.time}</div></div>
-        <span class="gold small">$${Number(d.pricePerSheet||0).toLocaleString('es-CO')}</span></div>`).join('')}
-      ${!nextDraws.length?`<p class="gray small">Sin sorteos</p>`:''}
+  const st=gs.status;
+  return`<div>
+    ${draw?`<div style="background:rgba(0,0,0,.35);border-bottom:1px solid var(--border);padding:.85rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <div class="fw7 white sm">${draw.name}</div>
+        <div class="gray xs" style="font-family:'Space Mono',monospace">
+          ${st==='playing'?`🔴 EN VIVO · Figura ${fi+1}/10 · ${drawn.length}/75 balotas`:st==='announcing_figure'?`📢 Anunciando Figura ${fi+1}`:st==='winner_found'?`🏆 ¡Ganador Figura ${fi+1}!`:'⏸ En espera'}
+        </div>
+      </div>
+      ${fig&&st!=='waiting'?`<div class="tx-prize-box"><div class="tx-prize-lbl">Premio actual</div><div class="tx-prize-amt">${fmtCOP(fig.prize)}</div></div>`:''}
+    </div>`:''}
+    <div class="pw">
+      ${!S.playerPhone?`<div class="card gl" style="max-width:380px;margin:2rem auto;text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:.65rem">🎱</div>
+        <h3 class="white mb05">Ver mis cartones</h3>
+        <p class="gray sm mb1">Ingresa tu número de teléfono para ver tus cartones del sorteo activo.</p>
+        <div class="inp-pre mb1"><span class="pre">+57</span><input id="pp-phone" class="inp" type="tel" placeholder="3001234567" maxlength="10"/></div>
+        <button class="btn btn-g btn-full" id="btn-find">🔍 Ver mis cartones</button>
+      </div>`:
+      !draw?`<div class="empty"><div style="font-size:2.5rem">🎱</div><p class="gray mt05">No hay sorteo activo en este momento.</p></div>`:
+      !mySheets.length?`<div class="empty">
+        <div style="font-size:2.5rem">🔍</div>
+        <p class="gray mt05 mb1">No se encontraron cartones para +57${S.playerPhone} en el sorteo activo.</p>
+        <button class="btn btn-gy" id="btn-chg-ph">Cambiar número</button>
+      </div>`:
+      `<div>
+        <div class="flex-b mb1">
+          <div class="white fw7 sm">${mySheets.reduce((s,sh)=>s+toArr(sh.cards).length,0)} cartones · <span class="gold" style="font-family:'Space Mono',monospace">+57${S.playerPhone}</span></div>
+          <button class="btn btn-gy btn-sm" id="btn-chg-ph">Cambiar número</button>
+        </div>
+        ${st==='winner_found'&&mySheets.some(sh=>toArr(sh.cards).some(c=>c.cardNumber===gs.currentWinner?.cardNumber))?`
+        <div style="background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.3);border-radius:var(--r);padding:1.5rem;text-align:center;margin-bottom:1.5rem;animation:fadeIn .5s ease">
+          <div style="font-size:3rem">🏆</div>
+          <div class="gold fw9" style="font-size:1.5rem">¡GANASTE!</div>
+          <div class="white fw7">Cartón #${gs.currentWinner.cardNumber} · ${fmtCOP(gs.currentWinner.prize)}</div>
+        </div>`:''}
+        <div class="play-grid">${mySheets.flatMap(sh=>toArr(sh.cards).map(c=>`
+          <div>
+            <div class="gray xs mb05" style="font-family:'Space Mono',monospace">HOJA #${sh.sheetNumber}</div>
+            ${renderCard(toArr(c.numbers),drawn,cells,c.cardNumber)}
+          </div>`)).join('')}</div>
+      </div>`}
     </div>
   </div>`;
 }
 
-function aDraws(){
+function pgLogin(){
+  if(S.isAdmin){nav('admin');return''}
+  return`<div class="pw narrow" style="max-width:380px;padding-top:4rem">
+    <div class="card gl">
+      <h2 class="gold mb1 tc">🔐 Acceso Admin</h2>
+      <div class="fg"><label>Email</label><input id="li-email" class="inp" type="email" placeholder="admin@bolsillolleno.com"/></div>
+      <div class="fg"><label>Contraseña</label><input id="li-pass" class="inp" type="password" placeholder="••••••••"/></div>
+      <div id="li-err" class="red sm hidden mb05"></div>
+      <button class="btn btn-g btn-full" id="btn-login">Iniciar Sesión</button>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════ ADMIN */
+function pgAdmin(){
+  const tabs=[['dashboard','📊 Dashboard'],['sorteos','🎱 Sorteos'],['figuras','🎨 Figuras'],['compras','💰 Compras'],['transmision','📺 Transmisión'],['ajustes','⚙ Ajustes']];
+  const pages={dashboard:aTabDash,sorteos:aTabSorteos,figuras:aTabFig,compras:aTabCompras,transmision:aTabTx,ajustes:aTabAjustes};
+  return`<div class="adm-wrap">
+    <div class="atabs">${tabs.map(([k,l])=>`<button class="atab${S.adminTab===k?' active':''}" data-tab="${k}">${l}</button>`).join('')}</div>
+    ${(pages[S.adminTab]||aTabDash)()}
+  </div>`;
+}
+
+function aTabDash(){
+  const draws=Object.values(S.draws);
+  const purs=Object.values(S.purchases);
+  const shs=Object.values(S.sheets);
+  const rev=purs.filter(p=>p.status==='confirmed').reduce((s,p)=>s+Number(p.total||0),0);
+  const pending=purs.filter(p=>p.status==='pending');
+  const recent=purs.sort((a,b)=>b.createdAt-a.createdAt).slice(0,6);
+  return`<div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-v">${draws.length}</div><div class="stat-l">Sorteos</div></div>
+      <div class="stat-card"><div class="stat-v">${purs.filter(p=>p.status==='confirmed').length}</div><div class="stat-l">Compras confirmadas</div></div>
+      <div class="stat-card"><div class="stat-v">${shs.length}</div><div class="stat-l">Hojas vendidas</div></div>
+      <div class="stat-card"><div class="stat-v" style="font-size:1.3rem">${fmtCOP(rev)}</div><div class="stat-l">Ingresos totales</div></div>
+    </div>
+    ${pending.length?`<div class="card gl mb15" style="border-color:rgba(245,158,11,.25)">
+      <div class="gold fw7 mb05">⚠ ${pending.length} compra${pending.length>1?'s':''} pendiente${pending.length>1?'s':''} de confirmación</div>
+      <button class="btn btn-gy btn-sm" data-tab="compras">Ver compras →</button>
+    </div>`:''}
+    <div class="card gl">
+      <h3 class="white mb1">Actividad reciente</h3>
+      ${!recent.length?`<p class="gray sm">Sin actividad aún.</p>`:`<div class="tbl-wrap"><table>
+        <thead><tr><th>Cliente</th><th>Sorteo</th><th>Hojas</th><th>Total</th><th>Estado</th></tr></thead>
+        <tbody>${recent.map(p=>`<tr>
+          <td class="fw7">${p.customerName}</td>
+          <td class="gray sm">${p.drawName||''}</td>
+          <td style="font-family:'Space Mono',monospace">${p.quantity}</td>
+          <td class="gold" style="font-family:'Space Mono',monospace">${fmtCOP(p.total)}</td>
+          <td><span class="badge b-${p.status==='confirmed'?'grn':p.status==='pending'?'yel':'gy'}">${p.status==='confirmed'?'✓ OK':p.status==='pending'?'⏳ Pend':'✗ Rech'}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`}
+    </div>
+  </div>`;
+}
+
+function aTabSorteos(){
   const draws=Object.entries(S.draws).map(([id,d])=>({id,...d})).sort((a,b)=>b.createdAt-a.createdAt);
   return`<div>
-    <div class="admin-bar"><h2 class="white">Sorteos</h2><button class="btn-gold sm" id="btn-show-df">+ Nuevo</button></div>
-    <div id="df-wrap" class="hidden card glass mb-1">
-      <h3 class="white">Nuevo Sorteo</h3>
-      <div class="form-grid">
-        <div class="fg"><label>Nombre</label><input id="df-name" class="inp" placeholder="Bingo Junio 2026"/></div>
-        <div class="fg"><label>Descripción</label><input id="df-desc" class="inp" placeholder="Opcional"/></div>
-        <div class="fg"><label>Fecha</label><input id="df-date" type="date" class="inp"/></div>
-        <div class="fg"><label>Hora</label><input id="df-time" type="time" class="inp"/></div>
-        <div class="fg"><label>Precio/hoja ($)</label><input id="df-price" type="number" class="inp" value="4000"/></div>
-        <div class="fg"><label>Cartones/hoja</label><input id="df-cards" type="number" class="inp" value="6"/></div>
+    <div class="a-hdr"><h2>🎱 Sorteos</h2><button class="btn btn-g btn-sm" id="btn-new-draw">+ Nuevo Sorteo</button></div>
+    <div id="new-draw-form" class="card gl mb15 hidden">
+      <h3 class="white mb1">Nuevo Sorteo</h3>
+      <div class="fgrow">
+        <div class="fg"><label>Nombre</label><input id="nd-name" class="inp" placeholder="Noche de Viernes"/></div>
+        <div class="fg"><label>Fecha</label><input id="nd-date" class="inp" type="date"/></div>
       </div>
-      <div class="flex-gap mt-1">
-        <button class="btn-gold" id="btn-save-draw">💾 Guardar</button>
-        <button class="btn-outline" id="btn-cancel-df">Cancelar</button>
+      <div class="fgrow">
+        <div class="fg"><label>Hora</label><input id="nd-time" class="inp" type="time"/></div>
+        <div class="fg"><label>Descripción (opcional)</label><input id="nd-desc" class="inp" placeholder=""/></div>
       </div>
+      <div class="fgrow">
+        <div class="fg"><label>Precio por hoja ($COP)</label><input id="nd-price" class="inp" type="number" value="${S.settings.pricePerSheet||5000}"/></div>
+        <div class="fg"><label>Cartones por hoja</label><input id="nd-cps" class="inp" type="number" value="${S.settings.cardsPerSheet||6}" min="1" max="12"/></div>
+      </div>
+      <div class="flex"><button class="btn btn-g" id="btn-save-draw">💾 Crear Sorteo</button><button class="btn btn-gy" id="btn-cancel-draw">Cancelar</button></div>
     </div>
-    <div class="vlist">
-      ${draws.map(d=>`<div class="card glass draw-item">
-        <div><div class="fw-bold white">${d.name}</div><div class="gray small">${d.date} – ${d.time} · $${Number(d.pricePerSheet||0).toLocaleString('es-CO')}/hoja · ${d.cardsPerSheet||6} cartones</div></div>
-        <div class="flex-gap">
-          <span class="badge ${d.status==='live'?'red':d.status==='finished'?'gray':'yellow'}">${d.status}</span>
-          <button class="btn-danger sm" data-del-draw="${d.id}">Eliminar</button>
-        </div>
-      </div>`).join('')}
-      ${!draws.length?`<p class="gray">Sin sorteos creados.</p>`:''}
-    </div>
+    ${!draws.length?`<div class="empty"><div style="font-size:2.5rem">🎱</div><p class="gray mt05">No hay sorteos creados.</p></div>`:
+    `<div class="tbl-wrap"><table>
+      <thead><tr><th>Nombre</th><th>Fecha</th><th>Precio/Hoja</th><th>Estado</th><th>Figuras</th><th>Acciones</th></tr></thead>
+      <tbody>${draws.map(d=>{
+        const fc=Object.values(d.figures||{}).filter(f=>f&&f.name).length;
+        return`<tr>
+          <td class="fw7">${d.name}</td>
+          <td class="gray sm" style="font-family:'Space Mono',monospace">${d.date||''} ${d.time||''}</td>
+          <td class="gold" style="font-family:'Space Mono',monospace">${fmtCOP(d.pricePerSheet)}</td>
+          <td><span class="badge b-${d.status==='live'?'red':d.status==='finished'?'gy':'yel'}">${d.status==='live'?'🔴 En Vivo':d.status==='finished'?'✓ Finalizado':'🕐 Programado'}</span></td>
+          <td style="font-family:'Space Mono',monospace">${fc}/10</td>
+          <td><div class="td-acts">
+            <button class="btn btn-o btn-sm" data-set-fig="${d.id}">🎨 Figuras</button>
+            <button class="btn btn-r btn-sm" data-del-draw="${d.id}">🗑</button>
+          </div></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`}
   </div>`;
 }
 
-function aPurchases(){
-  const pArr=Object.entries(S.purchases).map(([id,p])=>({id,...p})).sort((a,b)=>b.createdAt-a.createdAt);
+function aTabFig(){
+  const draws=Object.entries(S.draws).map(([id,d])=>({id,...d}));
+  const sid=S.adminSelDraw;
+  const draw=sid?S.draws[sid]:null;
+  const fe=S.figEd;
   return`<div>
-    <h2 class="white mb-1">Compras (${pArr.length})</h2>
-    <div class="vlist">
-      ${pArr.map(p=>`<div class="card glass">
-        <div class="pur-top">
+    <div class="a-hdr"><h2>🎨 Editor de Figuras</h2></div>
+    <div class="fg mb15" style="max-width:320px">
+      <label>Seleccionar Sorteo</label>
+      <select id="fig-draw-sel" class="inp">
+        <option value="">-- Selecciona un sorteo --</option>
+        ${draws.map(d=>`<option value="${d.id}"${sid===d.id?' selected':''}>${d.name}</option>`).join('')}
+      </select>
+    </div>
+    ${!sid?`<div class="empty"><div style="font-size:2.5rem">🎨</div><p class="gray mt05">Selecciona un sorteo para editar sus figuras.</p></div>`:
+    `<div>
+      <div class="fig-slots mb15">
+        ${Array.from({length:10},(_,i)=>{
+          const fig=draw?.figures?.[i];
+          return`<div class="fig-slot${fig?' has-fig':''}${fe.idx===i?' ae':''}" data-edit-fig="${i}">
+            <div class="fs-ord">Figura ${i+1}</div>
+            ${fig?`${renderFigMini(toArr(fig.cells))}<div class="fs-name">${fig.name}</div><div class="fs-prize">${fmtCOP(fig.prize)}</div>`
+            :`<div style="font-size:1.3rem;margin:.25rem 0">➕</div><div class="gray xs">Vacía</div>`}
+          </div>`;
+        }).join('')}
+      </div>
+      ${fe.idx!==null?`<div class="card gl">
+        <div class="flex-b mb1">
+          <h3 class="white">Editando Figura ${fe.idx+1}</h3>
+          <button class="btn btn-gy btn-sm" id="btn-cancel-fig">✕ Cancelar</button>
+        </div>
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start">
           <div>
-            <div class="fw-bold white">${p.customerName}</div>
-            <div class="gray small">Tel: ${p.customerPhone} · CC: ${p.customerId}</div>
-            <div class="gray small">${p.sheetCount} hojas · $${Number(p.totalPrice||0).toLocaleString('es-CO')}</div>
-            ${p.accessId?`<div class="gold small mono mt-05">🔑 ${p.accessId}</div>`:''}
+            <p class="gray xs mb05" style="text-transform:uppercase;letter-spacing:.06em;font-weight:700">Haz clic para marcar / desmarcar</p>
+            ${renderEdGrid(fe.cells)}
+            <button class="btn btn-gy btn-sm mt1" id="btn-clear-fig">🗑 Limpiar todo</button>
           </div>
-          <div class="flex-col-gap">
-            <span class="badge ${p.status==='confirmed'?'green':p.status==='pending'?'yellow':'red'}">${p.status}</span>
-            ${p.status==='pending'?`
-              <button class="btn-gold sm" data-confirm="${p.id}">✓ Confirmar</button>
-              <button class="btn-danger sm" data-reject="${p.id}">✗ Rechazar</button>`:''}
-            ${p.status==='confirmed'&&p.customerPhone?`<button class="btn-outline sm" data-wa="${p.id}">📲 Enviar acceso</button>`:''}
+          <div style="flex:1;min-width:200px">
+            <div class="fg"><label>Nombre de la figura</label><input id="fig-name" class="inp" value="${fe.name}" placeholder="Ej: Línea Horizontal"/></div>
+            <div class="fg"><label>Premio ($COP)</label><input id="fig-prize" class="inp" type="number" value="${fe.prize}" placeholder="50000" min="0"/></div>
+            <div class="flex mt1">
+              <button class="btn btn-g" id="btn-save-fig">💾 Guardar Figura ${fe.idx+1}</button>
+            </div>
+            ${draw?.figures?.[fe.idx]?`<button class="btn btn-r btn-sm mt05" id="btn-del-fig">🗑 Eliminar figura</button>`:''}
           </div>
         </div>
-      </div>`).join('')}
-      ${!pArr.length?`<p class="gray">Sin compras.</p>`:''}
-    </div>
+      </div>`:`<div class="card gl tc"><p class="gray sm">Haz clic en un slot para editar esa figura.</p></div>`}
+    </div>`}
   </div>`;
 }
 
-function aGame(){
-  const gs=S.gameState;
-  const scheduledDraws=Object.entries(S.draws).map(([id,d])=>({id,...d})).filter(d=>d.status==='scheduled');
-  const drawn=gs.drawnBalls||[];
-  return`<div class="grid2">
-    <div class="card glass">
-      <h3 class="white">Control del Juego</h3>
-      <div class="sr"><span class="gray">Estado</span><span class="badge ${gs.status==='drawing'?'red':gs.status==='paused'?'yellow':'gray'}">${gs.status}</span></div>
-      <div class="sr"><span class="gray">Balotas</span><span class="white">${drawn.length}/75</span></div>
-      ${gs.currentBall?`<div class="text-center my-1">
-        <div class="big-ball" style="background:${getBallColor(gs.currentBall)}">
-          <span class="ball-letter">${getBallLetter(gs.currentBall)}</span>
-          <span class="ball-num">${gs.currentBall}</span>
-        </div>
-      </div>`:''}
-      ${drawn.length?`<div class="balls-grid mb-1">${drawn.map(b=>`<span class="sball" style="background:${getBallColor(b)}">${b}</span>`).join('')}</div>`:''}
-      <div class="flex-gap">
-        ${gs.status==='drawing'?`<button class="btn-gold sm" id="btn-draw-ball">🎱 Sacar Balota</button>`:''}
-        ${gs.status==='drawing'?`<button class="btn-outline sm" id="btn-pause">⏸ Pausar</button>`:''}
-        ${gs.status==='paused'?`<button class="btn-gold sm" id="btn-resume">▶ Reanudar</button>`:''}
-        ${gs.currentDrawId?`<button class="btn-danger sm" id="btn-finish">⏹ Finalizar</button>`:''}
-      </div>
-    </div>
-    ${!gs.currentDrawId?`<div class="card glass">
-      <h3 class="white">Iniciar Sorteo</h3>
-      <div class="fg"><label>Sorteo</label>
-        <select id="sel-draw" class="inp">
-          <option value="">Selecciona...</option>
-          ${scheduledDraws.map(d=>`<option value="${d.id}">${d.name} – ${d.date} ${d.time}</option>`).join('')}
-        </select>
-      </div>
-      <div class="fg"><label>Segundos entre balotas (auto)</label><input id="inp-speed" type="number" class="inp" value="${gs.ballSpeed||5}" min="1" max="60"/></div>
-      <button class="btn-gold w-full mt-1" id="btn-start">▶ Iniciar Sorteo</button>
-    </div>`:`<div class="card glass"><p class="gray">Sorteo en curso.</p></div>`}
-  </div>`;
-}
-
-function aPatterns(){
-  const pArr=Object.entries(S.patterns).map(([id,p])=>({id,...p}));
+function aTabCompras(){
+  const purs=Object.entries(S.purchases).map(([id,p])=>({id,...p})).sort((a,b)=>b.createdAt-a.createdAt);
+  const pend=purs.filter(p=>p.status==='pending');
+  const conf=purs.filter(p=>p.status==='confirmed');
   return`<div>
-    <div class="admin-bar"><h2 class="white">Figuras y Premios</h2><button class="btn-gold sm" id="btn-show-pf">+ Nueva</button></div>
-    <div id="pf-wrap" class="hidden card glass mb-1">
-      <div class="form-grid">
-        <div class="fg"><label>Nombre</label><input id="pf-name" class="inp" placeholder="Línea Horizontal"/></div>
-        <div class="fg"><label>Tipo</label>
-          <select id="pf-type" class="inp">
-            <option value="horizontal_line">Línea Horizontal</option>
-            <option value="vertical_line">Línea Vertical</option>
-            <option value="diagonal">Diagonal</option>
-            <option value="four_corners">Cuatro Esquinas</option>
-            <option value="cross">Cruz</option>
-            <option value="full_card">Cartón Lleno</option>
+    <div class="a-hdr"><h2>💰 Compras</h2></div>
+    ${pend.length?`<div class="card gl mb15" style="border-color:rgba(245,158,11,.2)">
+      <div class="gold fw7 mb1">⚠ Pendientes (${pend.length})</div>
+      <div class="vlist">${pend.map(p=>`<div class="card" style="padding:.9rem">
+        <div class="flex-b">
+          <div>
+            <div class="fw7 white sm">${p.customerName}</div>
+            <div class="gray xs" style="font-family:'Space Mono',monospace">${p.phone} · ${p.drawName||''}</div>
+            <div class="gray xs" style="font-family:'Space Mono',monospace">${p.quantity} hoja${p.quantity>1?'s':''} · ${fmtCOP(p.total)}</div>
+          </div>
+          <div class="flex">
+            <button class="btn btn-gr btn-sm" data-confirm="${p.id}">✓ Confirmar</button>
+            <button class="btn btn-r btn-sm" data-reject="${p.id}">✗ Rechazar</button>
+          </div>
+        </div>
+      </div>`).join('')}</div>
+    </div>`:''}
+    ${conf.length?`<div class="card gl">
+      <div class="fw7 white mb1">✅ Confirmadas (${conf.length})</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Cliente</th><th>Teléfono</th><th>Hojas asignadas</th><th>Cartones</th><th>Total</th></tr></thead>
+        <tbody>${conf.map(p=>{
+          const cps=Number(S.draws[p.drawId]?.cardsPerSheet||6);
+          const cardEnd=p.cardStart+(p.quantity*cps)-1;
+          return`<tr>
+            <td class="fw7">${p.customerName}</td>
+            <td class="gray sm" style="font-family:'Space Mono',monospace">${p.phone}</td>
+            <td style="font-family:'Space Mono',monospace">#${p.sheetStart}${p.quantity>1?` – #${p.sheetStart+p.quantity-1}`:''}</td>
+            <td class="gray sm" style="font-family:'Space Mono',monospace">#${p.cardStart} – #${cardEnd}</td>
+            <td class="gold fw7" style="font-family:'Space Mono',monospace">${fmtCOP(p.total)}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`:''}
+    ${!purs.length?`<div class="empty"><div style="font-size:2.5rem">💰</div><p class="gray mt05">No hay compras aún.</p></div>`:''}
+  </div>`;
+}
+
+function aTabTx(){
+  const gs=S.gs;
+  const draw=gs.currentDrawId?S.draws[gs.currentDrawId]:null;
+  const draws=Object.entries(S.draws).map(([id,d])=>({id,...d})).filter(d=>d.status!=='finished');
+  const st=gs.status;
+  const fi=gs.currentFigureIndex||0;
+  const fig=draw?.figures?.[fi];
+  const drawn=toArr(gs.drawnBalls);
+  const bBadge={playing:'b-red',winner_found:'b-yel',announcing_figure:'b-blu',finished:'b-grn'};
+  const bLabel={playing:'🔴 EN VIVO',winner_found:'🏆 GANADOR',announcing_figure:'📢 ANUNCIANDO',finished:'✅ FINALIZADO',waiting:'⏸ ESPERANDO',no_winner:'😔 SIN GANADOR'};
+  return`<div>
+    <div class="a-hdr">
+      <h2>📺 Control de Transmisión</h2>
+      <span class="badge ${bBadge[st]||'b-gy'}">${bLabel[st]||st}</span>
+    </div>
+    <div class="card gl mb15">
+      ${!draw||st==='waiting'?`<h3 class="white mb1">Iniciar Transmisión</h3>
+        <div class="fg" style="max-width:360px">
+          <label>Seleccionar Sorteo</label>
+          <select id="tx-draw-sel" class="inp">
+            <option value="">-- Seleccionar --</option>
+            ${draws.map(d=>`<option value="${d.id}">${d.name} – ${d.date||''}</option>`).join('')}
           </select>
         </div>
-        <div class="fg"><label>Premio ($)</label><input id="pf-prize" type="number" class="inp" value="100000"/></div>
-        <div class="fg"><label>Descripción</label><input id="pf-desc" class="inp"/></div>
-      </div>
-      <div class="flex-gap mt-1">
-        <button class="btn-gold" id="btn-save-pat">💾 Guardar</button>
-        <button class="btn-outline" id="btn-cancel-pf">Cancelar</button>
-      </div>
-    </div>
-    <div class="vlist">
-      ${pArr.map(p=>`<div class="card glass draw-item">
-        <div><div class="fw-bold white">${p.name}</div><div class="gray small">${p.type}</div></div>
-        <div class="flex-gap">
-          <span class="gold fw-bold">$${Number(p.prize||0).toLocaleString('es-CO')}</span>
-          <button class="btn-danger sm" data-del-pat="${p.id}">Eliminar</button>
+        <button class="btn btn-g" id="btn-tx-init">▶ Iniciar Transmisión</button>`:
+      st==='announcing_figure'?`<div class="flex-b">
+        <div>
+          <div class="fw7 white">${draw.name} · Figura ${fi+1}/10</div>
+          <div class="gold sm" style="font-family:'Space Mono',monospace">${fig?.name||'Sin configurar'} · ${fmtCOP(fig?.prize)}</div>
         </div>
-      </div>`).join('')}
-      ${!pArr.length?`<p class="gray">Sin figuras. <button class="btn-gold sm" id="btn-init-pat">Cargar predeterminadas</button></p>`:''}
+        ${fig?`<button class="btn btn-gr btn-lg" id="btn-tx-play">▶ Iniciar Balotas</button>`
+        :`<span class="red sm">⚠ Configura la figura ${fi+1} antes de continuar</span>`}
+      </div>`:
+      st==='playing'?`<div>
+        <div class="flex-b mb1">
+          <div>
+            <div class="fw7 white">${draw.name} · Figura ${fi+1}/10</div>
+            <div class="gray sm" style="font-family:'Space Mono',monospace">${fig?.name||''} · ${drawn.length}/75 balotas</div>
+          </div>
+          <div class="flex">
+            <button class="btn btn-g btn-xl" id="btn-draw-ball">🎱 Sacar Balota</button>
+            <button class="btn btn-gy btn-sm" id="btn-tx-stop">⏹ Detener</button>
+          </div>
+        </div>
+        ${drawn.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:.5rem">
+          ${drawn.map(b=>`<div class="chip ${letter(b)}" style="width:34px;height:34px;font-size:.68rem">${b}</div>`).join('')}
+        </div>`:''}
+      </div>`:
+      st==='winner_found'?`<div>
+        <div class="flex-b mb1">
+          <div>
+            <div class="gold fw8">🏆 Cartón #${gs.currentWinner?.cardNumber} · Figura ${fi+1}/10</div>
+            <div class="white sm">${gs.currentWinner?.customerName} · ${fmtCOP(gs.currentWinner?.prize)}</div>
+          </div>
+        </div>
+        <div class="flex">
+          ${fi<9&&draw?.figures?.[fi+1]?`<button class="btn btn-g" id="btn-next-fig">▶ Siguiente Figura (${fi+2}/10)</button>`:''}
+          ${fi<9&&!draw?.figures?.[fi+1]?`<span class="gray xs">No hay figura ${fi+2} configurada</span>`:''}
+          <button class="btn btn-gy" id="btn-finish-draw">🏁 Finalizar Sorteo</button>
+        </div>
+      </div>`:
+      st==='no_winner'?`<div>
+        <div class="red fw7 mb1">Sin ganador en Figura ${fi+1} (se sortearon las 75 balotas)</div>
+        <div class="flex">
+          ${fi<9&&draw?.figures?.[fi+1]?`<button class="btn btn-g" id="btn-next-fig">▶ Siguiente Figura</button>`:''}
+          <button class="btn btn-gy" id="btn-finish-draw">🏁 Finalizar</button>
+        </div>
+      </div>`:
+      st==='finished'?`<div class="tc"><div class="grn fw7">✅ Sorteo finalizado</div><button class="btn btn-o mt1" id="btn-tx-reset">Nueva Transmisión</button></div>`:
+      ''}
+    </div>
+    <div class="card gl">
+      <div class="gray xs mb1 fw7" style="text-transform:uppercase;letter-spacing:.08em">👁 Vista en vivo</div>
+      <div style="background:var(--bg);border-radius:var(--r);overflow:hidden;min-height:180px">
+        <div class="tx" style="min-height:180px">${renderTx(gs,draw)}</div>
+      </div>
     </div>
   </div>`;
 }
 
-function aWinners(){
-  const wArr=Object.entries(S.winners).map(([id,w])=>({id,...w})).sort((a,b)=>b.createdAt-a.createdAt);
-  return`<div>
-    <h2 class="white mb-1">Ganadores</h2>
-    <div class="vlist">
-      ${wArr.map(w=>`<div class="card glass draw-item">
-        <div><div class="fw-bold white">${w.customerName||'—'}</div><div class="gray small">${w.patternName||''} · ${w.ballCount||0} balotas</div></div>
-        <div class="gold fw-bold">$${Number(w.prize||0).toLocaleString('es-CO')}</div>
-      </div>`).join('')}
-      ${!wArr.length?`<p class="gray">Sin ganadores aún.</p>`:''}
-    </div>
-  </div>`;
-}
-
-function aSettings(){
+function aTabAjustes(){
   const s=S.settings;
-  return`<div class="card glass" style="max-width:600px">
-    <h2 class="white">Configuración</h2>
-    <div class="form-grid mt-1">
-      <div class="fg"><label>WhatsApp (con código país)</label><input id="s-wa" class="inp" value="${s.whatsappNumber||''}"/></div>
-      <div class="fg"><label>Banco</label><input id="s-bank" class="inp" value="${s.bankName||''}"/></div>
-      <div class="fg"><label>Número de Cuenta</label><input id="s-acc" class="inp" value="${s.bankAccount||''}"/></div>
-      <div class="fg"><label>Titular</label><input id="s-holder" class="inp" value="${s.accountHolder||''}"/></div>
-      <div class="fg"><label>Precio por hoja ($)</label><input id="s-price" type="number" class="inp" value="${s.pricePerSheet||4000}"/></div>
-      <div class="fg"><label>Cartones por hoja</label><input id="s-cph" type="number" class="inp" value="${s.cardsPerSheet||6}"/></div>
+  return`<div>
+    <div class="a-hdr"><h2>⚙ Ajustes</h2></div>
+    <div class="card gl">
+      <h3 class="white mb1">General</h3>
+      <div class="fgrow">
+        <div class="fg"><label>Número WhatsApp (con código de país)</label><input id="set-wa" class="inp" value="${s.whatsappNumber||''}" placeholder="573001234567"/></div>
+        <div class="fg"><label>Precio por hoja por defecto ($COP)</label><input id="set-price" class="inp" type="number" value="${s.pricePerSheet||5000}"/></div>
+      </div>
+      <div class="fgrow">
+        <div class="fg"><label>Cartones por hoja por defecto</label><input id="set-cps" class="inp" type="number" value="${s.cardsPerSheet||6}" min="1" max="12"/></div>
+      </div>
+      <div class="sep"></div>
+      <h3 class="white mb1">Datos de pago (Nequi / Bre-B)</h3>
+      <div class="fgrow">
+        <div class="fg"><label>Banco / Plataforma</label><input id="set-bank" class="inp" value="${s.bankName||''}" placeholder="Nequi"/></div>
+        <div class="fg"><label>Número / Cuenta</label><input id="set-acc" class="inp" value="${s.bankAccount||''}" placeholder="3001234567"/></div>
+      </div>
+      <div class="fg"><label>Titular</label><input id="set-holder" class="inp" value="${s.accountHolder||''}" placeholder="Juan Pérez"/></div>
+      <button class="btn btn-g mt1" id="btn-save-settings">💾 Guardar Ajustes</button>
     </div>
-    <button class="btn-gold mt-1" id="btn-save-settings">💾 Guardar</button>
   </div>`;
 }
 
-// ─── FOOTER ──────────────────────────────────────────────────────────────────
-function renderFooter(){
-  return`<footer class="footer"><p class="gray small">© 2026 Bolsillo Lleno · Bingo Online</p></footer>`;
-}
-
-// ─── BIND EVENTS ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════ BIND */
 function bind(){
   // Nav
   document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>nav(el.dataset.nav)));
-
+  // Admin tabs
+  document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>{S.adminTab=el.dataset.tab;render()}));
   // Logout
-  document.getElementById('btn-logout')?.addEventListener('click',async()=>{ await signOut(auth); nav('home'); });
+  document.getElementById('btn-logout')?.addEventListener('click',()=>signOut(auth).then(()=>nav('home')));
 
-  // Login
-  document.getElementById('btn-login')?.addEventListener('click',async()=>{
-    const e2=document.getElementById('l-email').value;
-    const p2=document.getElementById('l-pass').value;
-    const er=document.getElementById('l-err');
-    try{ await signInWithEmailAndPassword(auth,e2,p2); nav('admin'); }
-    catch(e){ er.textContent=e.message; er.classList.remove('hidden'); }
-  });
-
-  // Qty pickers en comprar
+  // QTY buttons
   document.querySelectorAll('[data-minus]').forEach(el=>el.addEventListener('click',()=>{
-    const id=el.dataset.minus;
-    if(!S.qty[id]||S.qty[id]<=1) S.qty[id]=1; else S.qty[id]--;
-    updateQtyUI(id);
+    const id=el.dataset.minus;S.qty[id]=Math.max(1,(S.qty[id]||1)-1);updateQty(id);
   }));
   document.querySelectorAll('[data-plus]').forEach(el=>el.addEventListener('click',()=>{
-    const id=el.dataset.plus;
-    S.qty[id]=(S.qty[id]||1)+1;
-    updateQtyUI(id);
+    const id=el.dataset.plus;S.qty[id]=Math.min(20,(S.qty[id]||1)+1);updateQty(id);
   }));
+  function updateQty(id){
+    const d=S.draws[id];if(!d)return;
+    const q=S.qty[id]||1;
+    const cps=Number(d.cardsPerSheet||6);
+    const pps=Number(d.pricePerSheet||5000);
+    const qv=document.getElementById('qv-'+id);
+    const qi=document.getElementById('qi-'+id);
+    if(qv)qv.textContent=q;
+    if(qi)qi.innerHTML=`${cps*q} cartones · <strong class="gold" style="font-family:'Space Mono',monospace">${fmtCOP(pps*q)}</strong>`;
+  }
+
+  // Checkout
   document.querySelectorAll('[data-checkout]').forEach(el=>el.addEventListener('click',()=>{
     const id=el.dataset.checkout;
-    const draw={id,...S.draws[id]};
-    S.checkoutDraw=draw; S.checkoutSheets=S.qty[id]||1; nav('checkout');
+    S.checkoutDraw={id,...S.draws[id]};
+    S.checkoutSheets=S.qty[id]||1;
+    nav('checkout');
   }));
 
   // Checkout submit
   document.getElementById('btn-co-submit')?.addEventListener('click',async()=>{
-    const name=document.getElementById('co-name').value.trim();
-    const phone=document.getElementById('co-phone').value.trim();
-    const cid=document.getElementById('co-id').value.trim();
-    const msg=document.getElementById('co-msg');
-    if(!name||!phone||!cid){ showMsg(msg,'Completa todos los campos.','err'); return; }
+    const name=document.getElementById('co-name')?.value.trim();
+    const phone=document.getElementById('co-phone')?.value.trim();
+    if(!name||!phone){notify('Completa todos los campos','err');return}
+    if(phone.length<10){notify('Ingresa un número de teléfono válido (10 dígitos)','err');return}
+    const draw=S.checkoutDraw;
+    const n=S.checkoutSheets;
+    const total=Number(draw.pricePerSheet||5000)*n;
+    const pid=await rtPush('purchases',{drawId:draw.id,drawName:draw.name,customerName:name,phone:'+57'+phone,quantity:n,total,status:'pending',createdAt:Date.now()});
+    const waNum=S.settings.whatsappNumber||'573001234567';
+    const msg=encodeURIComponent(`¡Hola! Quiero comprar hojas para el sorteo "${draw.name}".\n\nNombre: ${name}\nTeléfono: +57${phone}\nHojas: ${n}\nTotal: ${fmtCOP(total)}\nID Pedido: ${pid}\n\nAdjunto el comprobante de pago.`);
+    window.open(`https://wa.me/${waNum}?text=${msg}`,'_blank');
+    notify('¡Pedido registrado! Continúa en WhatsApp ✓','ok');
+    nav('home');
+  });
+
+  // Login
+  document.getElementById('btn-login')?.addEventListener('click',async()=>{
+    const email=document.getElementById('li-email')?.value;
+    const pass=document.getElementById('li-pass')?.value;
+    const errEl=document.getElementById('li-err');
     try{
-      const draw=S.checkoutDraw;
-      const n=S.checkoutSheets;
-      const pps=Number(draw.pricePerSheet||4000);
-      const cps=Number(draw.cardsPerSheet||6);
-      const total=pps*n;
-      const pid=await rtPush('purchases',{customerName:name,customerPhone:phone,customerId:cid,
-        drawId:draw.id,sheetCount:n,totalCards:cps*n,totalPrice:total,status:'pending',createdAt:Date.now()});
-      const wa=S.settings.whatsappNumber||'573001234567';
-      const txt=encodeURIComponent(`*Hola! Quiero comprar hojas de Bingo* 🎱\n\n*Sorteo:* ${draw.name}\n*Nombre:* ${name}\n*Teléfono:* ${phone}\n*Cédula:* ${cid}\n*Hojas:* ${n}\n*Cartones:* ${cps*n}\n*Total:* $${total.toLocaleString('es-CO')}\n*ID Compra:* ${pid}\n\nAdjunto comprobante de pago.`);
-      window.open(`https://wa.me/${wa}?text=${txt}`,'_blank');
-      showMsg(msg,'¡Solicitud enviada! Continúa por WhatsApp.','ok');
-    } catch(e){ showMsg(msg,e.message,'err'); }
-  });
-
-  // Play login
-  document.getElementById('btn-play-login')?.addEventListener('click',()=>{
-    const v=document.getElementById('play-acc').value.trim();
-    if(v){ S.accessId=v; S.isAuthenticated=true; localStorage.setItem('bl_acc',v); render(); }
-  });
-  document.getElementById('btn-play-logout')?.addEventListener('click',()=>{
-    S.isAuthenticated=false; S.accessId=''; localStorage.removeItem('bl_acc'); render();
-  });
-
-  // Admin tabs
-  document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>{ S.adminTab=el.dataset.tab; render(); }));
-
-  // Draws admin
-  document.getElementById('btn-show-df')?.addEventListener('click',()=>document.getElementById('df-wrap')?.classList.toggle('hidden'));
-  document.getElementById('btn-cancel-df')?.addEventListener('click',()=>document.getElementById('df-wrap')?.classList.add('hidden'));
-  document.getElementById('btn-save-draw')?.addEventListener('click',async()=>{
-    const name=document.getElementById('df-name').value.trim();
-    const desc=document.getElementById('df-desc').value.trim();
-    const date=document.getElementById('df-date').value;
-    const time=document.getElementById('df-time').value;
-    const price=parseInt(document.getElementById('df-price').value)||4000;
-    const cards=parseInt(document.getElementById('df-cards').value)||6;
-    if(!name||!date||!time){ alert('Completa nombre, fecha y hora'); return; }
-    await rtPush('draws',{name,description:desc,date,time,pricePerSheet:price,cardsPerSheet:cards,status:'scheduled',createdAt:Date.now()});
-    document.getElementById('df-wrap')?.classList.add('hidden');
-  });
-  document.querySelectorAll('[data-del-draw]').forEach(el=>el.addEventListener('click',async()=>{
-    if(confirm('¿Eliminar sorteo?')) await rtDel('draws/'+el.dataset.delDraw);
-  }));
-
-  // Purchases admin
-  document.querySelectorAll('[data-confirm]').forEach(el=>el.addEventListener('click',async()=>{
-    const pid=el.dataset.confirm;
-    const p=S.purchases[pid]; if(!p) return;
-    const accessId=`BL_${Date.now()}_${Math.random().toString(36).substr(2,6).toUpperCase()}`;
-    const draw=S.draws[p.drawId];
-    if(draw){
-      const numSheets=Number(p.sheetCount||1);
-      const cps=Number(draw.cardsPerSheet||6);
-      // Generar UNA sheet por cada hoja comprada
-      for(let i=0;i<numSheets;i++){
-        const sheet=generateSheet(p.drawId,cps,pid,accessId);
-        await rtPush('sheets',sheet);
-      }
+      await signInWithEmailAndPassword(auth,email,pass);
+      nav('admin');
+    }catch(e){
+      if(errEl){errEl.textContent='Credenciales incorrectas.';errEl.classList.remove('hidden')}
     }
-    await rtUpd('purchases/'+pid,{status:'confirmed',accessId,confirmedAt:Date.now()});
-  }));
-  document.querySelectorAll('[data-reject]').forEach(el=>el.addEventListener('click',async()=>{
-    await rtUpd('purchases/'+el.dataset.reject,{status:'rejected'});
-  }));
-  document.querySelectorAll('[data-wa]').forEach(el=>el.addEventListener('click',()=>{
-    const p=S.purchases[el.dataset.wa]; if(!p||!p.accessId) return;
-    const txt=encodeURIComponent(`✅ *¡Tu compra fue confirmada!*\n\n*ID de Acceso:* \`${p.accessId}\`\n\nEntra a la app y en la sección *Jugar* ingresa este código para ver tus cartones. ¡Buena suerte! 🍀🎱`);
-    window.open(`https://wa.me/${p.customerPhone}?text=${txt}`,'_blank');
-  }));
+  });
+  document.getElementById('li-pass')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-login')?.click()});
 
-  // Game control
-  document.getElementById('btn-start')?.addEventListener('click',async()=>{
-    const drawId=document.getElementById('sel-draw')?.value;
-    const speed=parseInt(document.getElementById('inp-speed')?.value)||5;
-    if(!drawId){ alert('Selecciona un sorteo'); return; }
-    await rtUpd('draws/'+drawId,{status:'live',startedAt:Date.now()});
-    await rtSet('gameState',{currentDrawId:drawId,status:'drawing',drawnBalls:[],currentBall:null,ballSpeed:speed,lastDrawTime:Date.now()});
+  // Player phone
+  document.getElementById('btn-find')?.addEventListener('click',()=>{
+    const ph=document.getElementById('pp-phone')?.value.trim();
+    if(!ph||ph.length<10){notify('Ingresa un número válido','err');return}
+    S.playerPhone=ph;render();
   });
-  document.getElementById('btn-draw-ball')?.addEventListener('click',async()=>{
-    const ball=drawRandomBall(S.gameState.drawnBalls||[]);
-    const newDrawn=[...(S.gameState.drawnBalls||[]),ball];
-    await rtUpd('gameState',{currentBall:ball,drawnBalls:newDrawn,lastDrawTime:Date.now()});
-    if(S.gameState.currentDrawId) await rtUpd('draws/'+S.gameState.currentDrawId,{currentBall:ball,drawnBalls:newDrawn});
+  document.getElementById('pp-phone')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-find')?.click()});
+  document.getElementById('btn-chg-ph')?.addEventListener('click',()=>{S.playerPhone='';render()});
+
+  // ADMIN: new draw form
+  document.getElementById('btn-new-draw')?.addEventListener('click',()=>{
+    document.getElementById('new-draw-form')?.classList.toggle('hidden');
   });
-  document.getElementById('btn-pause')?.addEventListener('click',async()=>  await rtUpd('gameState',{status:'paused'}));
-  document.getElementById('btn-resume')?.addEventListener('click',async()=> await rtUpd('gameState',{status:'drawing'}));
-  document.getElementById('btn-finish')?.addEventListener('click',async()=>{
-    if(!confirm('¿Finalizar el sorteo?')) return;
-    if(S.gameState.currentDrawId) await rtUpd('draws/'+S.gameState.currentDrawId,{status:'finished',finishedAt:Date.now()});
-    await rtSet('gameState',{status:'waiting',currentDrawId:null,currentBall:null,drawnBalls:[],ballSpeed:5});
+  document.getElementById('btn-cancel-draw')?.addEventListener('click',()=>{
+    document.getElementById('new-draw-form')?.classList.add('hidden');
+  });
+  document.getElementById('btn-save-draw')?.addEventListener('click',async()=>{
+    const name=document.getElementById('nd-name')?.value.trim();
+    const date=document.getElementById('nd-date')?.value;
+    const time=document.getElementById('nd-time')?.value;
+    const desc=document.getElementById('nd-desc')?.value.trim();
+    const price=Number(document.getElementById('nd-price')?.value)||5000;
+    const cps=Number(document.getElementById('nd-cps')?.value)||6;
+    if(!name||!date||!time){notify('Completa nombre, fecha y hora','err');return}
+    await createDraw({name,date,time,description:desc,pricePerSheet:price,cardsPerSheet:cps});
+    document.getElementById('new-draw-form')?.classList.add('hidden');
   });
 
-  // Patterns admin
-  document.getElementById('btn-show-pf')?.addEventListener('click',()=>document.getElementById('pf-wrap')?.classList.toggle('hidden'));
-  document.getElementById('btn-cancel-pf')?.addEventListener('click',()=>document.getElementById('pf-wrap')?.classList.add('hidden'));
-  document.getElementById('btn-save-pat')?.addEventListener('click',async()=>{
-    const name=document.getElementById('pf-name').value.trim();
-    const type=document.getElementById('pf-type').value;
-    const prize=parseInt(document.getElementById('pf-prize').value)||100000;
-    const desc=document.getElementById('pf-desc').value.trim();
-    if(!name){ alert('Ingresa un nombre'); return; }
-    await rtPush('patterns',{name,type,prize,description:desc,createdAt:Date.now()});
-    document.getElementById('pf-wrap')?.classList.add('hidden');
-  });
-  document.querySelectorAll('[data-del-pat]').forEach(el=>el.addEventListener('click',async()=>{
-    if(confirm('¿Eliminar figura?')) await rtDel('patterns/'+el.dataset.delPat);
+  // ADMIN: delete draw
+  document.querySelectorAll('[data-del-draw]').forEach(el=>el.addEventListener('click',()=>deleteDraw(el.dataset.delDraw)));
+
+  // ADMIN: go to figures
+  document.querySelectorAll('[data-set-fig]').forEach(el=>el.addEventListener('click',()=>{
+    S.adminSelDraw=el.dataset.setFig;S.adminTab='figuras';S.figEd={idx:null,cells:Array(25).fill(false),name:'',prize:''};render();
   }));
-  document.getElementById('btn-init-pat')?.addEventListener('click',async()=>{
-    const defs=[
-      {name:'Línea Horizontal',type:'horizontal_line',prize:100000,description:'Cualquier línea horizontal'},
-      {name:'Línea Vertical',type:'vertical_line',prize:100000,description:'Cualquier línea vertical'},
-      {name:'Diagonal',type:'diagonal',prize:100000,description:'Cualquier diagonal'},
-      {name:'Cuatro Esquinas',type:'four_corners',prize:200000,description:'Las 4 esquinas'},
-      {name:'Cruz',type:'cross',prize:300000,description:'Cruz central'},
-      {name:'Cartón Lleno',type:'full_card',prize:1000000,description:'Todos los números'},
-    ];
-    for(const p of defs) await rtPush('patterns',p);
+
+  // ADMIN: figures draw selector
+  document.getElementById('fig-draw-sel')?.addEventListener('change',e=>{
+    S.adminSelDraw=e.target.value||null;
+    S.figEd={idx:null,cells:Array(25).fill(false),name:'',prize:''};
+    render();
   });
 
-  // Settings
+  // ADMIN: edit figure slot
+  document.querySelectorAll('[data-edit-fig]').forEach(el=>el.addEventListener('click',()=>{
+    const idx=parseInt(el.dataset.editFig);
+    const fig=S.draws[S.adminSelDraw]?.figures?.[idx];
+    S.figEd={idx,cells:fig?[...toArr(fig.cells)]:Array(25).fill(false),name:fig?.name||'',prize:fig?.prize||''};
+    render();
+  }));
+
+  // ADMIN: figure cell toggle
+  document.querySelectorAll('[data-fcell]').forEach(el=>el.addEventListener('click',()=>{
+    const idx=parseInt(el.dataset.fcell);
+    if(idx===CTR)return;
+    S.figEd.cells[idx]=!S.figEd.cells[idx];
+    // Re-render only the grid
+    const grid=el.closest('.fec-grid');
+    if(grid){grid.outerHTML=renderEdGrid(S.figEd.cells);bind()}else render();
+  }));
+
+  // ADMIN: save figure
+  document.getElementById('btn-save-fig')?.addEventListener('click',async()=>{
+    const fe=S.figEd;
+    const name=document.getElementById('fig-name')?.value.trim();
+    const prize=document.getElementById('fig-prize')?.value;
+    if(!name){notify('Ingresa el nombre de la figura','err');return}
+    if(!prize||Number(prize)<=0){notify('Ingresa el valor del premio','err');return}
+    if(!fe.cells.some((c,i)=>c&&i!==CTR)){notify('Marca al menos una casilla en la figura','err');return}
+    await saveFigure(S.adminSelDraw,fe.idx,name,prize,fe.cells);
+    render();
+  });
+
+  // ADMIN: clear figure cells
+  document.getElementById('btn-clear-fig')?.addEventListener('click',()=>{
+    S.figEd.cells=Array(25).fill(false);render();
+  });
+
+  // ADMIN: cancel figure edit
+  document.getElementById('btn-cancel-fig')?.addEventListener('click',()=>{
+    S.figEd={idx:null,cells:Array(25).fill(false),name:'',prize:''};render();
+  });
+
+  // ADMIN: delete figure
+  document.getElementById('btn-del-fig')?.addEventListener('click',async()=>{
+    if(!confirm('¿Eliminar esta figura?'))return;
+    await rtDel(`draws/${S.adminSelDraw}/figures/${S.figEd.idx}`);
+    S.figEd={idx:null,cells:Array(25).fill(false),name:'',prize:''};
+    notify('Figura eliminada','inf');
+    render();
+  });
+
+  // ADMIN: confirm/reject purchases
+  document.querySelectorAll('[data-confirm]').forEach(el=>el.addEventListener('click',()=>confirmPurchase(el.dataset.confirm)));
+  document.querySelectorAll('[data-reject]').forEach(el=>el.addEventListener('click',()=>rejectPurchase(el.dataset.reject)));
+
+  // ADMIN: transmission controls
+  document.getElementById('btn-tx-init')?.addEventListener('click',async()=>{
+    const id=document.getElementById('tx-draw-sel')?.value;
+    if(!id){notify('Selecciona un sorteo','err');return}
+    await txInit(id);
+    await txAnnounce();
+  });
+  document.getElementById('btn-tx-play')?.addEventListener('click',()=>txStartPlay());
+  document.getElementById('btn-draw-ball')?.addEventListener('click',()=>txDraw());
+  document.getElementById('btn-next-fig')?.addEventListener('click',()=>txNext());
+  document.getElementById('btn-finish-draw')?.addEventListener('click',()=>txFinish());
+  document.getElementById('btn-tx-stop')?.addEventListener('click',async()=>{
+    if(!confirm('¿Detener la transmisión actual?'))return;
+    await rtUpd('gameState',{status:'waiting'});
+  });
+  document.getElementById('btn-tx-reset')?.addEventListener('click',()=>txReset());
+
+  // ADMIN: settings save
   document.getElementById('btn-save-settings')?.addEventListener('click',async()=>{
-    await rtSet('settings',{
-      whatsappNumber:document.getElementById('s-wa').value.trim(),
-      bankName:document.getElementById('s-bank').value.trim(),
-      bankAccount:document.getElementById('s-acc').value.trim(),
-      accountHolder:document.getElementById('s-holder').value.trim(),
-      pricePerSheet:parseInt(document.getElementById('s-price').value)||4000,
-      cardsPerSheet:parseInt(document.getElementById('s-cph').value)||6,
+    await rtUpd('settings',{
+      whatsappNumber:document.getElementById('set-wa')?.value.trim()||'',
+      bankName:document.getElementById('set-bank')?.value.trim()||'',
+      bankAccount:document.getElementById('set-acc')?.value.trim()||'',
+      accountHolder:document.getElementById('set-holder')?.value.trim()||'',
+      pricePerSheet:Number(document.getElementById('set-price')?.value)||5000,
+      cardsPerSheet:Number(document.getElementById('set-cps')?.value)||6,
     });
-    alert('✅ Configuración guardada');
+    notify('Ajustes guardados ✓','ok');
   });
+
+  // Dashboard tab shortcut
+  document.querySelectorAll('[data-tab="compras"]').forEach(el=>el.addEventListener('click',()=>{S.adminTab='compras';render()}));
 }
 
-// ─── UI helpers ──────────────────────────────────────────────────────────────
-function showMsg(el,txt,type){
-  el.textContent=txt;
-  el.className=type==='ok'?'ok-msg':'err-msg';
-  el.classList.remove('hidden');
-}
-function updateQtyUI(id){
-  const draw=S.draws[id]; if(!draw) return;
-  const qty=S.qty[id]||1;
-  const pps=Number(draw.pricePerSheet||4000);
-  const cps=Number(draw.cardsPerSheet||6);
-  const qv=document.getElementById('qv-'+id);
-  const qi=document.getElementById('qi-'+id);
-  if(qv) qv.textContent=qty;
-  if(qi) qi.innerHTML=`${cps*qty} cartones · <strong class="gold">$${(pps*qty).toLocaleString('es-CO')}</strong>`;
-}
-
-// ─── INIT ────────────────────────────────────────────────────────────────────
-const stored=localStorage.getItem('bl_acc');
-if(stored){ S.accessId=stored; S.isAuthenticated=true; }
-
+/* ═══════════════════════════════════════════════ INIT */
+onAuthStateChanged(auth,u=>{S.user=u;S.isAdmin=!!(u&&u.uid===ADMIN_UID);render()});
 initListeners();
 render();
 </script>
-
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#080808;--card:#111;--brd:#2a2000;--gold:#eab308;--gold2:#facc15;
-  --gray:#9ca3af;--white:#f9f9f9;--red:#ef4444;--green:#22c55e;--r:14px;
-  --font:'Outfit',sans-serif;
-}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--white);font-family:var(--font);min-height:100vh;overflow-x:hidden}
-
-/* NAV */
-.navbar{position:sticky;top:0;z-index:100;background:rgba(8,8,8,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--brd)}
-.nav-inner{max-width:1200px;margin:0 auto;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.logo-btn{background:none;border:none;cursor:pointer}
-.logo-text{font-family:'Black Han Sans',sans-serif;font-size:1.25rem;background:linear-gradient(90deg,#facc15,#eab308,#ca8a04);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.nav-links{display:flex;flex-wrap:wrap;gap:.2rem}
-.nav-link{background:none;border:none;color:var(--gray);font-family:var(--font);font-size:.88rem;font-weight:500;cursor:pointer;padding:.4rem .8rem;border-radius:8px;transition:all .2s}
-.nav-link:hover,.nav-link.active{color:var(--gold);background:rgba(234,179,8,.1)}
-
-/* LAYOUT */
-.main{min-height:80vh}
-.page-wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem}
-.page-wrap.narrow{max-width:720px}
-.flex-center{align-items:center;justify-content:center;min-height:70vh}
-.center-msg{text-align:center;padding:4rem;color:var(--gray)}
-.loading{text-align:center;padding:3rem;color:var(--gray);font-size:1.1rem}
-
-/* HERO */
-.hero{position:relative;min-height:88vh;display:flex;align-items:center;padding:4rem 1.5rem;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(234,179,8,.12),transparent 70%)}
-.hero-content{position:relative;max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem}
-.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:999px;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.3);color:var(--gold);font-size:.85rem;font-weight:600;width:fit-content}
-.hero-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(2.4rem,6vw,4.5rem);line-height:1.08}
-.hero-sub{color:var(--gray);font-size:1.05rem;line-height:1.6;max-width:520px}
-.hero-btns{display:flex;gap:.85rem;flex-wrap:wrap}
-.hero-stats{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
-.hstat{text-align:center}
-.hstat-n{font-family:'Black Han Sans',sans-serif;font-size:1.8rem}
-.hstat-l{font-size:.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:.1em}
-.hstat-sep{width:1px;height:2.5rem;background:rgba(234,179,8,.25)}
-
-/* SECTIONS */
-.section{padding:5rem 1.5rem;max-width:1200px;margin:0 auto}
-.section-title{text-align:center;margin-bottom:2.5rem}
-.section-title h2{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:.5rem}
-.section-title p{color:var(--gray)}
-.border-top{border-top:1px solid var(--brd)}
-.cta-section{text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem}
-
-/* GRIDS */
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
-.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}
-.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.85rem}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.85rem}
-
-/* CARD */
-.card{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:1.25rem}
-.card.glass{backdrop-filter:blur(8px)}
-.rel{position:relative;overflow:hidden}
-
-/* STEP */
-.step-num-bg{position:absolute;top:.25rem;right:.75rem;font-family:'Black Han Sans',sans-serif;font-size:3.5rem;color:rgba(234,179,8,.06);line-height:1;pointer-events:none}
-.step-icon{font-size:2rem;margin-bottom:.5rem}
-
-/* PATTERNS */
-.pcard{display:flex;flex-direction:column;gap:.75rem;align-items:flex-start}
-.mini-board{display:grid;grid-template-columns:repeat(5,14px);gap:3px}
-.mini-cell{width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,.08)}
-.mini-cell.on{background:var(--gold);box-shadow:0 0 5px rgba(234,179,8,.5)}
-
-/* DRAW CARD */
-.draw-display{display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:start}
-.draw-info{display:flex;flex-direction:column;gap:.75rem}
-.draw-ball-side{display:flex;flex-direction:column;align-items:center;gap:.5rem;min-width:110px}
-.draw-meta{display:flex;gap:1rem;flex-wrap:wrap;color:var(--gray);font-size:.9rem}
-.draw-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.75rem}
-.draw-item{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.price-tag{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem}
-.vlist{display:flex;flex-direction:column;gap:.85rem}
-
-/* QTY */
-.qty-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.5rem 0}
-.qty-btn{width:2rem;height:2rem;border-radius:8px;border:1px solid var(--brd);background:rgba(255,255,255,.06);color:var(--white);font-size:1.1rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
-.qty-btn:hover{background:rgba(234,179,8,.15);border-color:var(--gold)}
-.qty-val{font-weight:700;font-size:1.2rem;color:var(--white);min-width:1.5rem;text-align:center}
-
-/* CHECKOUT */
-.checkout-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
-.sr{display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--brd);font-size:.9rem}
-.sr.total{font-weight:700;border-bottom:none;padding-top:.75rem}
-@media(max-width:640px){.checkout-grid{grid-template-columns:1fr}}
-
-/* PLAY — LOGIN */
-.play-login-wrap{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
-.play-login-box{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:var(--r);padding:2rem;max-width:400px;width:100%;text-align:center;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:.5rem}
-
-/* SALA */
-.sala-wrap{max-width:760px;margin:0 auto;padding:.6rem .85rem 3rem;display:flex;flex-direction:column;gap:.75rem}
-.sala-header{display:flex;justify-content:space-between;align-items:center}
-.sala-title{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;background:linear-gradient(90deg,#facc15,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sala-salir{background:rgba(255,255,255,.06);border:1px solid var(--brd);border-radius:8px;color:var(--gray);font-family:var(--font);font-size:.8rem;padding:.35rem .75rem;cursor:pointer}
-
-/* TX BOX */
-.tx-box{background:linear-gradient(160deg,#181000,#0c0c00);border:1px solid rgba(234,179,8,.2);border-radius:14px;padding:.85rem 1rem}
-.tx-box.live{border-color:rgba(239,68,68,.4);background:linear-gradient(160deg,#180000,#0c0000)}
-.tx-waiting{display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.2rem 0}
-.tx-play-icon{width:40px;height:40px;border-radius:50%;border:2px solid rgba(234,179,8,.35);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--gold);margin-bottom:.2rem}
-.tx-label{font-size:.6rem;color:var(--gray);letter-spacing:.15em;text-transform:uppercase}
-.tx-prox{font-size:.6rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase;margin-top:.3rem}
-.tx-countdown{font-family:'Black Han Sans',sans-serif;font-size:2.4rem;color:var(--gold);line-height:1.05}
-.tx-draw-date{font-size:.75rem;color:rgba(234,179,8,.65)}
-.tx-sub{font-size:.6rem;color:var(--gray);letter-spacing:.06em;text-transform:uppercase}
-.tx-live-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
-.tx-live-body{display:flex;align-items:center;gap:.85rem}
-.tx-ball{width:60px;height:60px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 3px 14px rgba(0,0,0,.5),inset 0 2px 5px rgba(255,255,255,.18);flex-shrink:0}
-.tx-ball-letter{font-size:.52rem;letter-spacing:.1em;opacity:.8;text-transform:uppercase}
-.tx-ball-num{font-size:1.35rem;line-height:1}
-.tx-ball-empty{width:60px;height:60px;border-radius:50%;border:2px dashed rgba(234,179,8,.25);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
-.tx-recent{flex:1;min-width:0}
-.tx-recent-balls{display:flex;flex-wrap:wrap;gap:3px;margin-top:.2rem}
-.sball-xs{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;font-size:.56rem;font-weight:700;color:#fff}
-.sball-cur{outline:2px solid #fff;outline-offset:1px}
-
-/* PATRONES */
-.pat-scroll{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:none}
-.pat-scroll::-webkit-scrollbar{display:none}
-.pat-chip{background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:10px;padding:.55rem .65rem;display:flex;flex-direction:column;align-items:center;gap:.28rem;flex-shrink:0;cursor:default}
-.pat-grid{display:grid;grid-template-columns:repeat(5,7px);gap:2px}
-.pat-dot{width:7px;height:7px;border-radius:1.5px;background:rgba(255,255,255,.1)}
-.pat-dot.on{background:var(--gold)}
-
-/* MIS HOJAS */
-.mis-hojas-hdr{display:flex;justify-content:space-between;align-items:center;margin-top:.25rem}
-.mis-hojas-title{font-family:'Black Han Sans',sans-serif;font-size:.95rem;color:var(--white)}
-.mis-hojas-count{font-size:.7rem;color:var(--gray);background:rgba(255,255,255,.05);border:1px solid var(--brd);border-radius:999px;padding:.18rem .6rem}
-.hoja-wrap{display:flex;flex-direction:column;gap:.4rem}
-.hoja-label{font-size:.65rem;color:rgba(234,179,8,.5);letter-spacing:.12em;text-transform:uppercase;text-align:center}
-
-/* CARTONES — 3 col vertical, más en landscape */
-.cards-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
-@media(min-width:520px){.cards-grid3{grid-template-columns:repeat(4,1fr)}}
-@media(orientation:landscape) and (max-height:600px){.cards-grid3{grid-template-columns:repeat(5,1fr)}}
-
-/* BINGO CARD */
-.bingo-card{border:1.5px solid rgba(234,179,8,.15);border-radius:9px;padding:.3rem;position:relative;background:rgba(10,8,0,.7);transition:border-color .3s,box-shadow .3s}
-.bingo-card.won{border-color:var(--gold);background:rgba(234,179,8,.07);box-shadow:0 0 18px rgba(234,179,8,.25)}
-.win-banner{position:absolute;top:-1px;left:50%;transform:translate(-50%,-50%);background:var(--gold);color:#000;font-weight:900;font-size:.56rem;padding:.12rem .5rem;border-radius:999px;white-space:nowrap;z-index:2;letter-spacing:.03em}
-.bingo-hdr{display:grid;grid-template-columns:repeat(5,1fr);gap:1.5px;margin-bottom:1.5px;text-align:center;font-weight:900;font-size:.58rem;color:var(--gold);letter-spacing:.05em}
-.bingo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1.5px}
-.bc{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);transition:background .2s,border-color .2s}
-.bc.mk{background:rgba(234,179,8,.3);border-color:rgba(234,179,8,.6);color:#facc15;font-weight:700}
-.bc.fr{background:rgba(234,179,8,.12);color:var(--gold);font-size:.7rem}
-
-/* NO CARDS */
-.no-cards-box{background:rgba(255,255,255,.02);border:1px solid var(--brd);border-radius:var(--r);padding:2rem 1.5rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.5rem}
-
-/* BALLS */
-.big-ball{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 2px 8px rgba(255,255,255,.2)}
-.big-ball.sm{width:52px;height:52px;font-size:.78rem}
-.ball-letter{font-size:.58rem;letter-spacing:.1em;opacity:.8;text-transform:uppercase}
-.ball-num{font-size:1.6rem;line-height:1}
-.balls-grid{display:flex;flex-wrap:wrap;gap:5px}
-.sball{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;font-size:.68rem;font-weight:700;color:#fff}
-
-/* ADMIN */
-.admin-tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.5rem}
-.tab-btn{background:rgba(255,255,255,.05);border:1px solid var(--brd);border-radius:8px;color:var(--gray);font-family:var(--font);font-size:.83rem;padding:.4rem .85rem;cursor:pointer;transition:all .2s}
-.tab-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:700}
-.admin-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
-.stat-card{display:flex;flex-direction:column;gap:.35rem}
-.si{font-size:1.7rem}
-.li{display:flex;justify-content:space-between;align-items:center;padding:.55rem .5rem;border-bottom:1px solid var(--brd)}
-.pur-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.flex-col-gap{display:flex;flex-direction:column;gap:.35rem;align-items:flex-start}
-
-/* FORM */
-.fg{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.6rem}
-.fg label{font-size:.78rem;color:var(--gray);text-transform:uppercase;letter-spacing:.05em}
-.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.6rem}
-.inp{background:rgba(255,255,255,.06);border:1px solid var(--brd);border-radius:8px;color:var(--white);font-family:var(--font);font-size:.93rem;padding:.6rem .85rem;width:100%;transition:border-color .2s;outline:none}
-.inp:focus{border-color:var(--gold)}
-.inp option{background:#1a1a1a;color:var(--white)}
-.err-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:8px;padding:.6rem .85rem;font-size:.87rem;margin-top:.5rem}
-.ok-msg{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#4ade80;border-radius:8px;padding:.6rem .85rem;font-size:.87rem;margin-top:.5rem}
-
-/* BUTTONS */
-.btn-gold{background:linear-gradient(135deg,#facc15,#eab308,#ca8a04);color:#000;font-family:var(--font);font-weight:700;border:none;border-radius:10px;padding:.65rem 1.35rem;cursor:pointer;font-size:.9rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
-.btn-gold:hover{box-shadow:0 0 20px rgba(234,179,8,.4);transform:translateY(-1px)}
-.btn-gold.btn-lg{padding:.85rem 1.8rem;font-size:1rem}
-.btn-gold.btn-xl{padding:1rem 2.5rem;font-size:1.15rem}
-.btn-gold.sm{padding:.3rem .7rem;font-size:.8rem}
-.btn-gold.w-full{width:100%;justify-content:center}
-.btn-outline{background:transparent;color:var(--gold);border:1px solid rgba(234,179,8,.4);font-family:var(--font);font-weight:600;border-radius:10px;padding:.65rem 1.35rem;cursor:pointer;font-size:.9rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
-.btn-outline:hover{background:rgba(234,179,8,.1)}
-.btn-outline.btn-lg{padding:.85rem 1.8rem;font-size:1rem}
-.btn-outline.sm{padding:.3rem .7rem;font-size:.8rem}
-.btn-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;font-family:var(--font);font-weight:600;border-radius:8px;padding:.3rem .7rem;cursor:pointer;font-size:.8rem;transition:all .2s}
-.btn-danger:hover{background:rgba(239,68,68,.28)}
-.btn-back{background:none;border:none;color:var(--gray);cursor:pointer;font-family:var(--font);font-size:.9rem;padding:.3rem 0;transition:color .2s}
-.btn-back:hover{color:var(--gold)}
-
-/* BADGES */
-.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.22rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.badge.red{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
-.badge.yellow{background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:var(--gold)}
-.badge.green{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
-.badge.gray{background:rgba(156,163,175,.12);border:1px solid rgba(156,163,175,.2);color:var(--gray)}
-
-/* UTILS */
-.gold{background:linear-gradient(90deg,#facc15,#eab308,#ca8a04);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.white{color:var(--white)} .gray{color:var(--gray)} .green{color:var(--green)}
-.fw-bold{font-weight:700} .fs-lg{font-size:1.2rem} .fs-xl{font-size:1.5rem} .fs-2xl{font-size:2rem} .fs-md{font-size:1rem}
-.small{font-size:.82rem} .text-center{text-align:center} .mono{font-family:monospace}
-.hidden{display:none!important} .w-full{width:100%}
-.mb-05{margin-bottom:.35rem} .mb-1{margin-bottom:1rem} .mt-05{margin-top:.35rem} .mt-1{margin-top:1rem} .my-1{margin:1rem 0}
-.flex-gap{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-
-/* FOOTER */
-.footer{border-top:1px solid var(--brd);padding:2rem 1.5rem;text-align:center;margin-top:3rem}
-
-@media(max-width:768px){
-  .draw-display{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-<div id="app" style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:1.1rem;color:#eab308">
-  ⏳ Cargando Bolsillo Lleno...
-</div>
 </body>
 </html>
