@@ -320,7 +320,7 @@ const S={
   adminSelDraw:null,
   figEd:{idx:null,cells:Array(25).fill(false),name:'',prize:''},
   checkoutDraw:null,checkoutSheets:1,qty:{},
-  playerPhone:'',
+  playerAccessId:'',
 };
 
 /* ═══════════════════════════════════════════════ FIREBASE */
@@ -382,6 +382,13 @@ function letter(n){if(n<=15)return'B';if(n<=30)return'I';if(n<=45)return'N';if(n
 function color(n){return BCOLORS[letter(n)]}
 function toArr(v){if(!v)return[];if(Array.isArray(v))return v;return Object.values(v)}
 function fmtCOP(n){return'$'+Number(n||0).toLocaleString('es-CO')}
+// Genera ID único de acceso tipo BL-K3M7 (sin chars confusos: 0/O, 1/I/L)
+function genAccessId(){
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let id='BL-';
+  for(let i=0;i<4;i++)id+=chars[Math.floor(Math.random()*chars.length)];
+  return id;
+}
 
 /* ═══════════════════════════════════════════════ ADMIN ACTIONS */
 async function confirmPurchase(pid){
@@ -410,15 +417,58 @@ async function confirmPurchase(pid){
         const cN=cs+s*cps+c;
         cards.push({cardNumber:cN,numbers:genCard(cN)});
       }
-      upd[`sheets/${p.drawId}_${shN}`]={drawId:p.drawId,sheetNumber:shN,purchaseId:pid,customerName:p.customerName,phone:p.phone,cards,confirmedAt:Date.now()};
+      upd[`sheets/${p.drawId}_${shN}`]={drawId:p.drawId,sheetNumber:shN,purchaseId:pid,accessId:p.accessId||pid,customerName:p.customerName,phone:p.phone,cards,confirmedAt:Date.now()};
     }
     await update(fr('/'),upd);
     const lbl=numSheets>1?`Hojas #${ss} al #${ss+numSheets-1}`:`Hoja #${ss}`;
     notify(`✓ ${lbl} asignadas a ${p.customerName}`,'ok');
+    // Auto-notify client via WhatsApp with their sheet/card numbers + sala access
+    enviarConfirmacionCliente(p,ss,cs,numSheets,cps,draw);
   }catch(e){notify('Error: '+e.message,'err')}
 }
 
-async function rejectPurchase(pid){
+function enviarConfirmacionCliente(p,ss,cs,numSheets,cps,draw){
+  const cardEnd=cs+(numSheets*cps)-1;
+  const salaUrl=window.location.origin+window.location.pathname;
+  const hojas=numSheets>1?`Hojas #${ss} al #${ss+numSheets-1}`:`Hoja #${ss}`;
+  const cartones=`#${cs} al #${cardEnd}`;
+  const fecha=draw.date&&draw.time?`📅 Fecha: ${draw.date} a las ${draw.time}`:'';
+  const accId=p.accessId||p.id;
+  const msg=encodeURIComponent(
+`¡Hola ${p.customerName}! 🎉 Tu compra ha sido confirmada.
+
+🔑 *TU ID DE ACCESO*
+┌─────────────────┐
+│   ${accId.padEnd(13)}  │
+└─────────────────┘
+Guárdalo bien, lo necesitas para entrar a la sala.
+
+✅ *DETALLE DE TU COMPRA*
+🎟 ${hojas}
+🎱 Cartones: ${cartones}
+🏆 Sorteo: ${draw.name}
+${fecha}
+
+📱 *CÓMO VER TUS CARTONES EN VIVO*
+1. Entra a: ${salaUrl}
+2. Toca *"Mis Cartones"*
+3. Escribe tu ID: *${accId}*
+4. ¡Listo! Tus ${numSheets*cps} cartones se marcan solos.
+
+Cuando ganes verás *¡BINGO!* en pantalla al instante. 🍀 ¡Mucha suerte!`
+  );
+  const clientPhone=p.phone.replace(/[^0-9]/g,'');
+  window.open(`https://wa.me/${clientPhone}?text=${msg}`,'_blank');
+}
+
+async function reenviarInfoCliente(pid){
+  const p=S.purchases[pid];
+  if(!p||p.status!=='confirmed'){notify('Solo se puede reenviar compras confirmadas','inf');return}
+  const draw=S.draws[p.drawId];
+  if(!draw)return;
+  const cps=Number(draw.cardsPerSheet||6);
+  enviarConfirmacionCliente(p,p.sheetStart,p.cardStart,Number(p.quantity),cps,draw);
+}
   if(!confirm('¿Rechazar esta compra?'))return;
   await rtUpd(`purchases/${pid}`,{status:'rejected'});
   notify('Compra rechazada','inf');
@@ -458,10 +508,13 @@ async function txStartPlay(){
   await rtUpd('gameState',{status:'playing'});
 }
 
+let _drawing=false;
 async function txDraw(){
   const gs=S.gs;
-  if(gs.status!=='playing')return;
-  const drawn=toArr(gs.drawnBalls);
+  if(gs.status!=='playing'||_drawing)return;
+  _drawing=true;
+  // Force clean JS array from Firebase (may come as object {0:1,1:5,...})
+  const drawn=toArr(gs.drawnBalls).map(Number).filter(n=>n>0&&n<=75);
   try{
     const ball=randBall(drawn);
     const newDrawn=[...drawn,ball];
@@ -470,7 +523,7 @@ async function txDraw(){
   }catch(e){
     await rtUpd('gameState',{status:'no_winner'});
     notify(e.message,'inf');
-  }
+  }finally{_drawing=false;}
 }
 
 async function checkAllWins(drawId,figIdx,drawn){
@@ -487,9 +540,9 @@ async function checkAllWins(drawId,figIdx,drawn){
       if(checkWin(nums,drawn,cells)){
         await rtUpd('gameState',{
           status:'winner_found',
-          currentWinner:{cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,customerName:sh.customerName,phone:sh.phone,prize:fig.prize,figureName:fig.name,figureIndex:figIdx}
+          currentWinner:{cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,accessId:sh.accessId||sh.purchaseId,customerName:sh.customerName,phone:sh.phone,prize:fig.prize,figureName:fig.name,figureIndex:figIdx}
         });
-        await rtPush('winners',{drawId,drawName:draw.name,cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,customerName:sh.customerName,prize:fig.prize,figureName:fig.name,figureIndex:figIdx,ballsDrawn:drawn.length,createdAt:Date.now()});
+        await rtPush('winners',{drawId,drawName:draw.name,cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,accessId:sh.accessId||sh.purchaseId,customerName:sh.customerName,prize:fig.prize,figureName:fig.name,figureIndex:figIdx,ballsDrawn:drawn.length,createdAt:Date.now()});
         return;
       }
     }
@@ -516,9 +569,6 @@ async function txFinish(){
 async function txReset(){
   await rtSet('gameState',{status:'waiting',currentDrawId:null,currentFigureIndex:0,currentBall:null,drawnBalls:[],currentWinner:null});
 }
-
-/* ═══════════════════════════════════════════════ AUTH */
-onAuthStateChanged(auth,u=>{S.user=u;S.isAdmin=!!(u&&u.uid===ADMIN_UID);render()});
 
 /* ═══════════════════════════════════════════════ HELPERS */
 function nav(p){S.page=p;window.scrollTo(0,0);render()}
@@ -699,8 +749,12 @@ function txWinner(gs,draw){
   const nxt=draw?.figures?.[fi+1];
   return`<div class="tx-win">
     <div class="tx-w-ic">🏆</div>
-    <div class="tx-w-ttl">¡TENEMOS GANADOR!</div>
+    <div class="tx-w-ttl">¡BINGO! TENEMOS GANADOR</div>
     <div class="tx-w-cn">Cartón #${w.cardNumber}</div>
+    <div style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.35);border-radius:8px;padding:.4rem 1rem;margin:.25rem 0">
+      <span style="font-size:.72rem;color:var(--dim);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.08em">ID de Compra</span>
+      <span style="font-family:'Space Mono',monospace;font-weight:800;font-size:1.2rem;color:var(--gold)">${w.accessId||''}</span>
+    </div>
     <div class="tx-w-nm">${w.customerName||'Jugador'}</div>
     <div class="tx-w-pr">${fmtCOP(w.prize)}</div>
     <div class="tx-w-fi">${w.figureName||''} · Figura ${fi+1}/10</div>
@@ -905,9 +959,9 @@ function pgPlay(){
   const cells=fig?toArr(fig.cells):null;
   const drawn=toArr(gs.drawnBalls);
   let mySheets=[];
-  if(S.playerPhone){
-    const ph=S.playerPhone.startsWith('+57')?S.playerPhone:'+57'+S.playerPhone;
-    mySheets=Object.values(S.sheets).filter(sh=>sh.drawId===gs.currentDrawId&&sh.phone===ph);
+  if(S.playerAccessId){
+    const aid=S.playerAccessId.toUpperCase().trim();
+    mySheets=Object.values(S.sheets).filter(sh=>sh.drawId===gs.currentDrawId&&(sh.accessId||'').toUpperCase()===aid);
   }
   const st=gs.status;
   return`<div>
@@ -921,29 +975,38 @@ function pgPlay(){
       ${fig&&st!=='waiting'?`<div class="tx-prize-box"><div class="tx-prize-lbl">Premio actual</div><div class="tx-prize-amt">${fmtCOP(fig.prize)}</div></div>`:''}
     </div>`:''}
     <div class="pw">
-      ${!S.playerPhone?`<div class="card gl" style="max-width:380px;margin:2rem auto;text-align:center">
+      ${!S.playerAccessId?`<div class="card gl" style="max-width:400px;margin:2rem auto;text-align:center">
         <div style="font-size:2.5rem;margin-bottom:.65rem">🎱</div>
-        <h3 class="white mb05">Ver mis cartones</h3>
-        <p class="gray sm mb1">Ingresa tu número de teléfono para ver tus cartones del sorteo activo.</p>
-        <div class="inp-pre mb1"><span class="pre">+57</span><input id="pp-phone" class="inp" type="tel" placeholder="3001234567" maxlength="10"/></div>
+        <h3 class="white mb05">Entrar a la Sala</h3>
+        <p class="gray sm mb1">Ingresa el ID de Acceso que recibiste al confirmar tu compra.</p>
+        <div class="fg">
+          <label>ID de Acceso</label>
+          <input id="pp-aid" class="inp" type="text" placeholder="BL-K3M7" maxlength="7" style="text-transform:uppercase;font-family:'Space Mono',monospace;font-size:1.1rem;letter-spacing:.1em;text-align:center"/>
+        </div>
         <button class="btn btn-g btn-full" id="btn-find">🔍 Ver mis cartones</button>
+        <p class="gray xs mt1">El ID te lo enviamos por WhatsApp al confirmar tu compra.<br>Ejemplo: <strong style="font-family:'Space Mono',monospace;color:var(--gold)">BL-K3M7</strong></p>
       </div>`:
       !draw?`<div class="empty"><div style="font-size:2.5rem">🎱</div><p class="gray mt05">No hay sorteo activo en este momento.</p></div>`:
       !mySheets.length?`<div class="empty">
         <div style="font-size:2.5rem">🔍</div>
-        <p class="gray mt05 mb1">No se encontraron cartones para +57${S.playerPhone} en el sorteo activo.</p>
-        <button class="btn btn-gy" id="btn-chg-ph">Cambiar número</button>
+        <p class="gray mt05 mb1">No se encontraron cartones para el ID <strong style="font-family:'Space Mono',monospace;color:var(--gold)">${S.playerAccessId.toUpperCase()}</strong> en el sorteo activo.</p>
+        <p class="gray xs mb1">Verifica que el ID sea correcto o que tu compra haya sido confirmada.</p>
+        <button class="btn btn-gy" id="btn-chg-ph">← Cambiar ID</button>
       </div>`:
       `<div>
         <div class="flex-b mb1">
-          <div class="white fw7 sm">${mySheets.reduce((s,sh)=>s+toArr(sh.cards).length,0)} cartones · <span class="gold" style="font-family:'Space Mono',monospace">+57${S.playerPhone}</span></div>
-          <button class="btn btn-gy btn-sm" id="btn-chg-ph">Cambiar número</button>
+          <div>
+            <span class="badge b-grn">✓ Acceso verificado</span>
+            <span class="gray sm" style="margin-left:.5rem;font-family:'Space Mono',monospace">${S.playerAccessId.toUpperCase()}</span>
+          </div>
+          <button class="btn btn-gy btn-sm" id="btn-chg-ph">← Cambiar ID</button>
         </div>
         ${st==='winner_found'&&mySheets.some(sh=>toArr(sh.cards).some(c=>c.cardNumber===gs.currentWinner?.cardNumber))?`
-        <div style="background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.3);border-radius:var(--r);padding:1.5rem;text-align:center;margin-bottom:1.5rem;animation:fadeIn .5s ease">
+        <div style="background:rgba(240,180,41,.1);border:2px solid var(--gold);border-radius:var(--r);padding:1.5rem;text-align:center;margin-bottom:1.5rem;animation:fadeIn .5s ease">
           <div style="font-size:3rem">🏆</div>
-          <div class="gold fw9" style="font-size:1.5rem">¡GANASTE!</div>
+          <div class="gold fw9" style="font-size:1.6rem">¡BINGO! ¡GANASTE!</div>
           <div class="white fw7">Cartón #${gs.currentWinner.cardNumber} · ${fmtCOP(gs.currentWinner.prize)}</div>
+          <div class="gray xs mt05">${gs.currentWinner.figureName||''}</div>
         </div>`:''}
         <div class="play-grid">${mySheets.flatMap(sh=>toArr(sh.cards).map(c=>`
           <div>
@@ -1129,16 +1192,18 @@ function aTabCompras(){
     ${conf.length?`<div class="card gl">
       <div class="fw7 white mb1">✅ Confirmadas (${conf.length})</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Cliente</th><th>Teléfono</th><th>Hojas asignadas</th><th>Cartones</th><th>Total</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Teléfono</th><th>ID Acceso</th><th>Hojas asignadas</th><th>Cartones</th><th>Total</th><th></th></tr></thead>
         <tbody>${conf.map(p=>{
           const cps=Number(S.draws[p.drawId]?.cardsPerSheet||6);
           const cardEnd=p.cardStart+(p.quantity*cps)-1;
           return`<tr>
             <td class="fw7">${p.customerName}</td>
             <td class="gray sm" style="font-family:'Space Mono',monospace">${p.phone}</td>
+            <td><span style="font-family:'Space Mono',monospace;font-weight:800;color:var(--gold);background:rgba(240,180,41,.08);padding:2px 8px;border-radius:5px;border:1px solid rgba(240,180,41,.2)">${p.accessId||'—'}</span></td>
             <td style="font-family:'Space Mono',monospace">#${p.sheetStart}${p.quantity>1?` – #${p.sheetStart+p.quantity-1}`:''}</td>
             <td class="gray sm" style="font-family:'Space Mono',monospace">#${p.cardStart} – #${cardEnd}</td>
             <td class="gold fw7" style="font-family:'Space Mono',monospace">${fmtCOP(p.total)}</td>
+            <td><button class="btn btn-gy btn-sm" data-resend="${p.id}">📲 Reenviar</button></td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>
@@ -1296,9 +1361,10 @@ function bind(){
     const draw=S.checkoutDraw;
     const n=S.checkoutSheets;
     const total=Number(draw.pricePerSheet||5000)*n;
-    const pid=await rtPush('purchases',{drawId:draw.id,drawName:draw.name,customerName:name,phone:'+57'+phone,quantity:n,total,status:'pending',createdAt:Date.now()});
+    const accessId=genAccessId();
+    const pid=await rtPush('purchases',{drawId:draw.id,drawName:draw.name,customerName:name,phone:'+57'+phone,quantity:n,total,accessId,status:'pending',createdAt:Date.now()});
     const waNum=S.settings.whatsappNumber||'573001234567';
-    const msg=encodeURIComponent(`¡Hola! Quiero comprar hojas para el sorteo "${draw.name}".\n\nNombre: ${name}\nTeléfono: +57${phone}\nHojas: ${n}\nTotal: ${fmtCOP(total)}\nID Pedido: ${pid}\n\nAdjunto el comprobante de pago.`);
+    const msg=encodeURIComponent(`🛒 *NUEVO PEDIDO*\nCliente: ${name}\nTeléfono: +57${phone}\nSorteo: ${draw.name}\nHojas: ${n} · Total: ${fmtCOP(total)}\nID de Compra: ${pid}\nID de Acceso (asignar al confirmar): ${accessId}\n\n⚠ Confirma el pago y luego aprueba en el panel admin.`);
     window.open(`https://wa.me/${waNum}?text=${msg}`,'_blank');
     notify('¡Pedido registrado! Continúa en WhatsApp ✓','ok');
     nav('home');
@@ -1320,12 +1386,12 @@ function bind(){
 
   // Player phone
   document.getElementById('btn-find')?.addEventListener('click',()=>{
-    const ph=document.getElementById('pp-phone')?.value.trim();
-    if(!ph||ph.length<10){notify('Ingresa un número válido','err');return}
-    S.playerPhone=ph;render();
+    const aid=document.getElementById('pp-aid')?.value.trim().toUpperCase();
+    if(!aid||aid.length<4){notify('Ingresa tu ID de acceso (ej: BL-K3M7)','err');return}
+    S.playerAccessId=aid;render();
   });
-  document.getElementById('pp-phone')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-find')?.click()});
-  document.getElementById('btn-chg-ph')?.addEventListener('click',()=>{S.playerPhone='';render()});
+  document.getElementById('pp-aid')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-find')?.click()});
+  document.getElementById('btn-chg-ph')?.addEventListener('click',()=>{S.playerAccessId='';render()});
 
   // ADMIN: new draw form
   document.getElementById('btn-new-draw')?.addEventListener('click',()=>{
@@ -1374,9 +1440,7 @@ function bind(){
     const idx=parseInt(el.dataset.fcell);
     if(idx===CTR)return;
     S.figEd.cells[idx]=!S.figEd.cells[idx];
-    // Re-render only the grid
-    const grid=el.closest('.fec-grid');
-    if(grid){grid.outerHTML=renderEdGrid(S.figEd.cells);bind()}else render();
+    render();
   }));
 
   // ADMIN: save figure
@@ -1413,6 +1477,7 @@ function bind(){
   // ADMIN: confirm/reject purchases
   document.querySelectorAll('[data-confirm]').forEach(el=>el.addEventListener('click',()=>confirmPurchase(el.dataset.confirm)));
   document.querySelectorAll('[data-reject]').forEach(el=>el.addEventListener('click',()=>rejectPurchase(el.dataset.reject)));
+  document.querySelectorAll('[data-resend]').forEach(el=>el.addEventListener('click',()=>reenviarInfoCliente(el.dataset.resend)));
 
   // ADMIN: transmission controls
   document.getElementById('btn-tx-init')?.addEventListener('click',async()=>{
@@ -1422,7 +1487,12 @@ function bind(){
     await txAnnounce();
   });
   document.getElementById('btn-tx-play')?.addEventListener('click',()=>txStartPlay());
-  document.getElementById('btn-draw-ball')?.addEventListener('click',()=>txDraw());
+  document.getElementById('btn-draw-ball')?.addEventListener('click',async()=>{
+    const btn=document.getElementById('btn-draw-ball');
+    if(btn)btn.disabled=true;
+    await txDraw();
+    if(btn)btn.disabled=false;
+  });
   document.getElementById('btn-next-fig')?.addEventListener('click',()=>txNext());
   document.getElementById('btn-finish-draw')?.addEventListener('click',()=>txFinish());
   document.getElementById('btn-tx-stop')?.addEventListener('click',async()=>{
@@ -1444,8 +1514,6 @@ function bind(){
     notify('Ajustes guardados ✓','ok');
   });
 
-  // Dashboard tab shortcut
-  document.querySelectorAll('[data-tab="compras"]').forEach(el=>el.addEventListener('click',()=>{S.adminTab='compras';render()}));
 }
 
 /* ═══════════════════════════════════════════════ INIT */
