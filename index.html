@@ -425,7 +425,8 @@ async function confirmPurchase(pid){
     }
     await update(fr('/'),upd);
     const lbl=numSheets>1?`Hojas #${ss} al #${ss+numSheets-1}`:`Hoja #${ss}`;
-    S.lastConfirmedCode={code:accessCode,name:p.customerName,pid,lbl};
+    S.lastConfirmedCode={code:accessCode,name:p.customerName,pid,lbl,
+      phone:p.phone,drawName:draw.name,drawDate:draw.date||'',drawTime:draw.time||''};
     S.adminTab='compras';
     notify(`✓ ${lbl} asignadas · Código: ${accessCode}`,'ok');
     render();
@@ -824,7 +825,66 @@ function pgHome(){
 function pgSala(){
   const gs=S.gs;
   const draw=gs.currentDrawId?S.draws[gs.currentDrawId]:null;
-  return`<div class="tx">${renderTx(gs,draw)}</div>`;
+  const fi=gs.currentFigureIndex||0;
+  const fig=draw?.figures?.[fi];
+  const cells=fig?toArr(fig.cells):null;
+  const drawn=toArr(gs.drawnBalls);
+  const st=gs.status;
+
+  // Buscar cartones del jugador por código
+  let mySheets=[];
+  if(S.accessCode){
+    const code=S.accessCode.toUpperCase().trim();
+    mySheets=Object.values(S.sheets).filter(sh=>sh.accessCode===code&&sh.drawId===gs.currentDrawId);
+  }
+
+  return`<div class="tx">
+    ${renderTx(gs,draw)}
+
+    <!-- Panel de acceso del jugador -->
+    <div style="border-top:1px solid var(--border);background:var(--bg2)">
+      ${!S.accessCode?`
+        <div style="padding:1.25rem 1.5rem;max-width:520px;margin:0 auto;text-align:center">
+          <div class="gray xs fw7 mb05" style="text-transform:uppercase;letter-spacing:.1em">🎱 Ver mis cartones en vivo</div>
+          <p class="gray sm mb1">Ingresa tu código de acceso para que tus cartones se marquen solos</p>
+          <div style="display:flex;gap:.5rem;max-width:340px;margin:0 auto">
+            <input id="sala-code" class="inp" type="text" placeholder="BL-XXXXXX" maxlength="9"
+              style="text-align:center;font-size:1rem;font-weight:700;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;flex:1"/>
+            <button class="btn btn-g" id="btn-sala-find">Entrar →</button>
+          </div>
+        </div>
+      `:mySheets.length?`
+        <div style="padding:1rem 1.5rem">
+          <div class="flex-b mb1">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+              <span class="white fw7 sm">${mySheets[0].customerName||'Jugador'}</span>
+              <span class="badge b-grn" style="font-family:'Space Mono',monospace;letter-spacing:.05em">${S.accessCode.toUpperCase()}</span>
+              <span class="gray xs">${mySheets.reduce((s,sh)=>s+toArr(sh.cards).length,0)} cartones</span>
+            </div>
+            <button class="btn btn-gy btn-sm" id="btn-sala-clear">✕ Salir</button>
+          </div>
+          ${st==='winner_found'&&mySheets.some(sh=>toArr(sh.cards).some(c=>c.cardNumber===gs.currentWinner?.cardNumber))?`
+            <div style="background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.4);border-radius:var(--r);padding:1.25rem;text-align:center;margin-bottom:1rem;animation:fadeIn .5s ease">
+              <div style="font-size:2.8rem">🏆</div>
+              <div class="gold fw9" style="font-size:1.4rem">¡GANASTE!</div>
+              <div class="white fw7 mt05">Cartón #${gs.currentWinner.cardNumber} · ${fmtCOP(gs.currentWinner.prize)}</div>
+            </div>`:''}
+          <div class="play-grid" style="padding:0">${mySheets.flatMap(sh=>toArr(sh.cards).map(c=>`
+            <div>
+              <div class="gray xs mb05" style="font-family:'Space Mono',monospace">HOJA #${sh.sheetNumber}</div>
+              ${renderCard(toArr(c.numbers),drawn,cells,c.cardNumber)}
+            </div>`)).join('')}</div>
+        </div>
+      `:`
+        <div style="padding:1rem 1.5rem;max-width:520px;margin:0 auto">
+          <div class="flex-b">
+            <p class="gray sm">Código <span class="gold fw7" style="font-family:'Space Mono',monospace">${S.accessCode.toUpperCase()}</span> — ${draw?'sin cartones en este sorteo':'sin sorteo activo aún'}</p>
+            <button class="btn btn-gy btn-sm" id="btn-sala-clear">🔄 Cambiar</button>
+          </div>
+        </div>
+      `}
+    </div>
+  </div>`;
 }
 
 function pgComprar(){
@@ -1160,11 +1220,22 @@ function aTabCompras(){
         <div>
           <div class="gold fw8 mb05">✅ Compra confirmada — Comparte este código con ${lc.name}</div>
           <div class="gray xs mb1">${lc.lbl} asignadas · ID: <span style="font-family:'Space Mono',monospace;color:var(--dim)">${lc.pid}</span></div>
-          <div style="display:inline-flex;align-items:center;gap:.75rem;background:rgba(0,0,0,.35);border:1px solid var(--gold);border-radius:var(--r);padding:.65rem 1.1rem">
+          <div style="display:inline-flex;align-items:center;gap:.75rem;background:rgba(0,0,0,.35);border:1px solid var(--gold);border-radius:var(--r);padding:.65rem 1.1rem;margin-bottom:.65rem">
             <span style="font-size:1.6rem;font-weight:800;letter-spacing:.12em;color:var(--gold);font-family:'Space Mono',monospace">${lc.code}</span>
             <button class="btn btn-gy btn-sm" id="btn-copy-code" data-code="${lc.code}">📋 Copiar</button>
           </div>
-          <p class="gray xs mt05">El cliente ingresa este código en la sección <strong class="white">Mis Cartones</strong> para ver su tablero.</p>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-gr" id="btn-wa-client"
+              data-phone="${lc.phone}"
+              data-code="${lc.code}"
+              data-name="${lc.name}"
+              data-drawname="${lc.drawName||''}"
+              data-drawdate="${lc.drawDate||''}"
+              data-drawtime="${lc.drawTime||''}">
+              📲 Enviar código por WhatsApp al cliente
+            </button>
+          </div>
+          <p class="gray xs mt05">El cliente ingresa este código en "Sala" o "Mis Cartones" para ver su tablero en tiempo real.</p>
         </div>
         <button class="btn btn-gy btn-sm" id="btn-dismiss-code">✕</button>
       </div>
@@ -1391,6 +1462,15 @@ function bind(){
   document.getElementById('ac-code')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-find')?.click()});
   document.getElementById('btn-chg-ph')?.addEventListener('click',()=>{S.accessCode='';render()});
 
+  // Sala: código de acceso
+  document.getElementById('btn-sala-find')?.addEventListener('click',()=>{
+    const code=document.getElementById('sala-code')?.value.trim().toUpperCase();
+    if(!code||code.length<5){notify('Ingresa un código válido (ej: BL-A3K9PQ)','err');return}
+    S.accessCode=code;render();
+  });
+  document.getElementById('sala-code')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-sala-find')?.click()});
+  document.getElementById('btn-sala-clear')?.addEventListener('click',()=>{S.accessCode='';render()});
+
   // Admin: copy code buttons
   document.getElementById('btn-copy-code')?.addEventListener('click',e=>{
     const code=e.currentTarget.dataset.code;
@@ -1401,6 +1481,29 @@ function bind(){
     const code=el.dataset.copyCode;
     navigator.clipboard?.writeText(code).then(()=>notify(`¡Código ${code} copiado!`,'ok')).catch(()=>notify(code,'inf'));
   }));
+
+  // Admin: enviar WA al cliente con código de acceso
+  document.getElementById('btn-wa-client')?.addEventListener('click',e=>{
+    const {phone,code,name,drawname,drawdate,drawtime}=e.currentTarget.dataset;
+    // Fix prefijo: wa.me NO acepta '+', debe ser solo dígitos. +573001234567 → 573001234567
+    const clientPhone=phone.replace(/^\+/,'').replace(/\s/g,'') || '57';
+    const siteUrl=window.location.origin+window.location.pathname;
+    const drawLine=drawname?`📅 *Sorteo:* ${drawname}\n🗓 *Fecha:* ${drawdate} – ${drawtime}\n\n`:'';
+    const msg=encodeURIComponent(
+      `¡Hola ${name}! 🎱 *Bol$illo Lleno – Bingo Online*\n\n`+
+      `✅ Tu compra fue *confirmada*.\n\n`+
+      `🔑 *Tu código de acceso:*\n`+
+      `*${code}*\n\n`+
+      `${drawLine}`+
+      `📲 *¿Cómo entrar al sorteo?*\n`+
+      `1️⃣ Abre: ${siteUrl}\n`+
+      `2️⃣ Ve a la sección *Sala*\n`+
+      `3️⃣ Ingresa tu código: *${code}*\n`+
+      `4️⃣ ¡Tus cartones se marcan solos en tiempo real! 🎉\n\n`+
+      `🍀 ¡Mucha suerte!`
+    );
+    window.open(`https://wa.me/${clientPhone}?text=${msg}`,'_blank');
+  });
 
   // ADMIN: new draw form
   document.getElementById('btn-new-draw')?.addEventListener('click',()=>{
