@@ -660,6 +660,9 @@ const S={
   editPur:null,
   purFilter:{draw:'',status:'',q:''},
 
+  autoMode:false,
+  autoSpeed:5, // segundos entre balotas en modo automático
+
 };
 
 
@@ -688,7 +691,16 @@ function initListeners(){
 
   onValue(fr('winners'),s=>{S.winners=s.exists()?s.val():{};render()});
 
-  onValue(fr('gameState'),s=>{if(s.exists())S.gs={...S.gs,...s.val()};render()});
+  onValue(fr('gameState'),s=>{
+    if(s.exists()){
+      const val=s.val();
+      // Firebase borra el nodo cuando drawnBalls=[] → hay que forzar [] si no viene
+      S.gs={...S.gs,...val,drawnBalls:val.drawnBalls?toArr(val.drawnBalls):[]};
+      // Si el estado sale de 'playing', apagamos el modo automático
+      if(val.status&&val.status!=='playing')stopAutoMode();
+    }
+    render()
+  });
 
   onValue(fr('settings'),s=>{if(s.exists())S.settings={...S.settings,...s.val()};render()});
 
@@ -1093,6 +1105,38 @@ async function txFinish(){
 async function txReset(){
 
   await rtSet('gameState',{status:'waiting',currentDrawId:null,currentFigureIndex:0,currentBall:null,drawnBalls:[],currentWinner:null});
+
+}
+
+
+
+/* ── AUTO MODE ── */
+
+let _autoIntervalId=null;
+
+function startAutoMode(){
+
+  if(_autoIntervalId){clearInterval(_autoIntervalId);_autoIntervalId=null;}
+
+  S.autoMode=true;
+
+  _autoIntervalId=setInterval(async()=>{
+
+    if(S.gs.status!=='playing'){stopAutoMode();return;}
+
+    await txDraw();
+
+  },S.autoSpeed*1000);
+
+  render();
+
+}
+
+function stopAutoMode(){
+
+  if(_autoIntervalId){clearInterval(_autoIntervalId);_autoIntervalId=null;}
+
+  if(S.autoMode){S.autoMode=false;render();}
 
 }
 
@@ -2733,11 +2777,33 @@ function aTabTx(){
 
           <div class="flex">
 
-            <button class="btn btn-g btn-xl" id="btn-draw-ball">🎱 Sacar Balota</button>
+            <button class="btn btn-g btn-xl" id="btn-draw-ball"${S.autoMode?' disabled':''}>🎱 Sacar Balota</button>
 
             <button class="btn btn-gy btn-sm" id="btn-tx-stop">⏹ Detener</button>
 
           </div>
+
+        </div>
+
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.75rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:.65rem">
+
+          <span class="gray xs fw7" style="text-transform:uppercase;letter-spacing:.06em">⚡ Automático:</span>
+
+          <div style="display:flex;align-items:center;gap:.4rem">
+
+            <input id="auto-speed-inp" type="number" class="inp" value="${S.autoSpeed}" min="1" max="60" style="width:68px;text-align:center" ${S.autoMode?'disabled':''}/>
+
+            <span class="gray xs">seg</span>
+
+          </div>
+
+          ${S.autoMode
+
+            ?`<button class="btn btn-r" id="btn-auto-stop">⏸ Detener Auto</button><span class="b-red badge" style="animation:none">🔴 AUTO ACTIVO · cada ${S.autoSpeed}s</span>`
+
+            :`<button class="btn btn-gr" id="btn-auto-start">▶ Iniciar Auto</button>`
+
+          }
 
         </div>
 
@@ -3341,6 +3407,17 @@ function bind(){
   });
 
   document.getElementById('btn-tx-reset')?.addEventListener('click',()=>txReset());
+
+  // AUTO MODE
+  document.getElementById('btn-auto-start')?.addEventListener('click',()=>{
+    const spd=parseInt(document.getElementById('auto-speed-inp')?.value)||5;
+    S.autoSpeed=Math.max(1,Math.min(60,spd));
+    startAutoMode();
+  });
+
+  document.getElementById('btn-auto-stop')?.addEventListener('click',()=>{
+    stopAutoMode();
+  });
 
 
 
