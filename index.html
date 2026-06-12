@@ -1054,7 +1054,7 @@ async function checkAllWins(drawId,figIdx,drawn){
 
         });
 
-        await rtPush('winners',{drawId,drawName:draw.name,cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,customerName:sh.customerName,prize:fig.prize,figureName:fig.name,figureIndex:figIdx,ballsDrawn:drawn.length,createdAt:Date.now()});
+        await rtPush('winners',{drawId,drawName:draw.name,cardNumber:card.cardNumber,sheetNumber:sh.sheetNumber,customerName:sh.customerName,phone:sh.phone||'',prize:fig.prize,figureName:fig.name,figureIndex:figIdx,ballsDrawn:drawn.length,createdAt:Date.now()});
 
         return;
 
@@ -2224,9 +2224,9 @@ function pgLogin(){
 
 function pgAdmin(){
 
-  const tabs=[['dashboard','📊 Dashboard'],['sorteos','🎱 Sorteos'],['figuras','🎨 Figuras'],['compras','💰 Compras'],['transmision','📺 Transmisión'],['ajustes','⚙ Ajustes']];
+  const tabs=[['dashboard','📊 Dashboard'],['sorteos','🎱 Sorteos'],['figuras','🎨 Figuras'],['compras','💰 Compras'],['transmision','📺 Transmisión'],['ganadores','🏆 Ganadores'],['ajustes','⚙ Ajustes']];
 
-  const pages={dashboard:aTabDash,sorteos:aTabSorteos,figuras:aTabFig,compras:aTabCompras,transmision:aTabTx,ajustes:aTabAjustes};
+  const pages={dashboard:aTabDash,sorteos:aTabSorteos,figuras:aTabFig,compras:aTabCompras,transmision:aTabTx,ganadores:aTabGanadores,ajustes:aTabAjustes};
 
   return`<div class="adm-wrap">
 
@@ -2879,6 +2879,87 @@ function aTabTx(){
 
 
 
+function aTabGanadores(){
+
+  const wins=Object.entries(S.winners||{}).map(([id,w])=>({id,...w})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+  const draws=Object.entries(S.draws).map(([id,d])=>({id,...d}));
+
+  const fDraw=S._ganFilter||'';
+
+  const filtered=fDraw?wins.filter(w=>w.drawId===fDraw):wins;
+
+  const totalPrize=filtered.reduce((s,w)=>s+Number(w.prize||0),0);
+
+  return`<div>
+
+    <div class="a-hdr"><h2>🏆 Registro de Ganadores</h2><span class="badge b-grn">${filtered.length} ganador${filtered.length!==1?'es':''}</span></div>
+
+    <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.25rem">
+
+      <div style="min-width:220px">
+
+        <label class="lbl">Filtrar por sorteo</label>
+
+        <select id="gan-draw-filter" class="inp">
+
+          <option value="">Todos los sorteos</option>
+
+          ${draws.map(d=>`<option value="${d.id}"${fDraw===d.id?' selected':''}>${d.name}</option>`).join('')}
+
+        </select>
+
+      </div>
+
+      ${filtered.length?`<div style="background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.18);border-radius:var(--rsm);padding:.45rem .9rem;font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;color:var(--gold);white-space:nowrap">Total entregado: ${fmtCOP(totalPrize)}</div>`:''}
+
+    </div>
+
+    ${!filtered.length?`<div class="card gl empty"><div style="font-size:2.5rem">🏆</div><p class="gray mt05">No hay ganadores registrados${fDraw?' en este sorteo':''}.</p></div>`
+
+    :`<div class="tbl-wrap"><table>
+
+      <thead><tr><th>Cliente</th><th>Teléfono</th><th>Sorteo</th><th>Figura</th><th>Cartón</th><th>Premio</th><th>Balotas</th><th>Fecha</th><th></th></tr></thead>
+
+      <tbody>${filtered.map(w=>{
+
+        const phone=(w.phone||'').replace(/\D/g,'');
+
+        const waMsg=encodeURIComponent(`🏆 ¡Hola ${w.customerName||''}! Eres el ganador de *${w.figureName||''}* en el sorteo *${w.drawName||''}* con el cartón #${w.cardNumber}. Tu premio es de *${fmtCOP(w.prize)}*. ¡Felicitaciones! 🎉`);
+
+        const fecha=w.createdAt?new Date(w.createdAt).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+
+        return`<tr>
+
+          <td class="fw7">${w.customerName||'—'}</td>
+
+          <td style="font-family:'Space Mono',monospace;font-size:.8rem">${w.phone?w.phone:'<span class="gray xs">Sin teléfono</span>'}</td>
+
+          <td class="gray sm">${w.drawName||'—'}</td>
+
+          <td class="white sm">${w.figureName||'—'}</td>
+
+          <td style="font-family:'Space Mono',monospace">#${w.cardNumber||'—'}</td>
+
+          <td class="gold fw7" style="font-family:'Space Mono',monospace">${fmtCOP(w.prize)}</td>
+
+          <td style="font-family:'Space Mono',monospace;color:var(--gray);font-size:.8rem">${w.ballsDrawn||'—'}</td>
+
+          <td class="gray xs" style="white-space:nowrap">${fecha}</td>
+
+          <td>${phone?`<a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" class="btn btn-gr btn-sm" style="text-decoration:none">💬 WA</a>`:`<span class="gray xs">—</span>`}</td>
+
+        </tr>`;
+
+      }).join('')}</tbody>
+
+    </table></div>`}
+
+  </div>`;
+
+}
+
+
 function aTabAjustes(){
 
   const s=S.settings;
@@ -2940,6 +3021,10 @@ function bind(){
   // Admin tabs
 
   document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>{S.adminTab=el.dataset.tab;render()}));
+
+  // Ganadores filter
+
+  document.getElementById('gan-draw-filter')?.addEventListener('change',e=>{S._ganFilter=e.target.value;render()});
 
   // Logout
 
