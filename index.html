@@ -908,11 +908,32 @@ async function createDraw(data){
 
 async function deleteDraw(id){
 
-  if(!confirm('¿Eliminar este sorteo?'))return;
+  if(!confirm('¿Eliminar este sorteo y toda su información (ventas, hojas y ganadores)?'))return;
 
-  await rtDel(`draws/${id}`);
+  // Construir update masivo que borra en una sola operación atómica:
+  // draws/{id}, todas las compras del sorteo, todas las hojas y todos los ganadores
+  const upd={};
 
-  notify('Sorteo eliminado','inf');
+  upd[`draws/${id}`]=null;
+
+  // Eliminar compras vinculadas al sorteo
+  Object.entries(S.purchases||{}).forEach(([pid,p])=>{
+    if(p.drawId===id)upd[`purchases/${pid}`]=null;
+  });
+
+  // Eliminar hojas cuya clave empieza con "{id}_"
+  Object.keys(S.sheets||{}).forEach(key=>{
+    if(key.startsWith(`${id}_`))upd[`sheets/${key}`]=null;
+  });
+
+  // Eliminar ganadores vinculados al sorteo
+  Object.entries(S.winners||{}).forEach(([wid,w])=>{
+    if(w.drawId===id)upd[`winners/${wid}`]=null;
+  });
+
+  await update(fr('/'),upd);
+
+  notify('Sorteo y datos relacionados eliminados','inf');
 
 }
 
